@@ -15,11 +15,11 @@
 
 ### 1. Quantitative Portfolio Analytics & Downside Risk Metrics
 - **Ticker Normalization**: Automatically normalizes uploaded equity & ETF tickers to standard NSE format with `.NS` suffix (e.g., `RELIANCE` → `RELIANCE.NS`, `TCS.BO` → `TCS.NS`).
-- **Herfindahl-Hirschman Index ($HHI = \sum w_i^2$)**: Evaluates asset concentration risk and classifies portfolio health (Low Concentration $< 0.15$, Moderate $0.15 - 0.25$, High Concentration $> 0.25$).
+- **Herfindahl-Hirschman Index (HHI = ∑ wᵢ²)**: Evaluates asset concentration risk and classifies portfolio health (Low Concentration < 0.15, Moderate 0.15 – 0.25, High Concentration > 0.25).
 - **QuantStats Downside Risk Suite**:
   - **Sortino Ratio**: Downside risk-adjusted performance metric.
   - **Calmar Ratio**: Return relative to maximum portfolio drawdown.
-  - **Value at Risk ($VaR_{95\%}$)** & **Conditional VaR ($CVaR_{95\%}$)**: tail risk quantification.
+  - **Value at Risk (VaR 95%) & Conditional VaR (CVaR 95%)**: Tail risk quantification.
   - **Max Drawdown %**: Peak-to-trough decline measurement.
 - **Hierarchical Risk Parity (HRP)**: Decomposes asset covariance matrices using single-linkage hierarchical clustering and recursive bisection variance allocation to avoid matrix inversion instability.
 - **Black-Litterman Macro Tilt**: Blends market equilibrium returns with geopolitical threat signals (Brent crude inflation, USD/INR FX volatility, FII net capital flows).
