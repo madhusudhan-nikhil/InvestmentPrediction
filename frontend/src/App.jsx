@@ -15,14 +15,15 @@ export default function App() {
 
   const [availableCapital, setAvailableCapital] = useState(500000); // Default ₹5 Lakhs
   const [riskProfile, setRiskProfile] = useState("Moderate");
+  const [recommendationCount, setRecommendationCount] = useState(16);
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState("dashboard"); // 'dashboard' or 'simulator'
 
-  // Initial load
+  // Initial load: fetch macro pulse and generate recommendations directly without requiring a CSV upload
   useEffect(() => {
     fetchMacroPulse();
-    loadSamplePortfolio();
+    fetchRecommendations(500000, "Moderate", [], 16);
   }, []);
 
   const fetchMacroPulse = async () => {
@@ -31,7 +32,6 @@ export default function App() {
       setMacroPulse(res.data);
     } catch (e) {
       console.warn("API macro-pulse fetch error, using resilient state:", e);
-      // Fallback pulse state
       setMacroPulse({
         threat_score: 38.5,
         active_regime: "BULLISH_DOMESTIC_GROWTH",
@@ -59,7 +59,13 @@ export default function App() {
     ];
     setHoldings(sample);
     await parseHoldingsList(sample);
-    await fetchRecommendations(availableCapital, riskProfile, sample);
+    await fetchRecommendations(availableCapital, riskProfile, sample, recommendationCount);
+  };
+
+  const loadFreshCapitalRecommendations = async () => {
+    setHoldings([]);
+    setDiagnostics(null);
+    await fetchRecommendations(availableCapital, riskProfile, [], recommendationCount);
   };
 
   const parseHoldingsList = async (holdingsList) => {
@@ -87,7 +93,7 @@ export default function App() {
           "Purchase Price": h.purchase_price
         }));
         setHoldings(parsed);
-        await fetchRecommendations(availableCapital, riskProfile, parsed);
+        await fetchRecommendations(availableCapital, riskProfile, parsed, recommendationCount);
       }
     } catch (e) {
       alert("Failed to parse uploaded CSV. Please check formatting.");
@@ -96,13 +102,15 @@ export default function App() {
     }
   };
 
-  const fetchRecommendations = async (capital, risk, currentHoldings) => {
+  const fetchRecommendations = async (capital, risk, currentHoldings, targetCount) => {
     setLoading(true);
+    const countToUse = targetCount || recommendationCount;
     try {
       const res = await axios.post(`${API_BASE_URL}/api/recommend-inr`, {
         available_capital_inr: capital,
         risk_profile: risk,
-        holdings: currentHoldings
+        holdings: currentHoldings,
+        count: countToUse
       });
       setRecommendations(res.data);
     } catch (e) {
@@ -112,8 +120,9 @@ export default function App() {
     }
   };
 
-  const handleRunOptimization = () => {
-    fetchRecommendations(availableCapital, riskProfile, holdings);
+  const handleRunOptimization = (countOverride) => {
+    const targetCount = typeof countOverride === 'number' ? countOverride : recommendationCount;
+    fetchRecommendations(availableCapital, riskProfile, holdings, targetCount);
   };
 
   return (
@@ -133,8 +142,11 @@ export default function App() {
           setAvailableCapital={setAvailableCapital}
           riskProfile={riskProfile}
           setRiskProfile={setRiskProfile}
+          recommendationCount={recommendationCount}
+          setRecommendationCount={setRecommendationCount}
           onUploadCSV={handleUploadCSV}
           onLoadSamplePortfolio={loadSamplePortfolio}
+          onGenerateFreshCapital={loadFreshCapitalRecommendations}
           onRunOptimization={handleRunOptimization}
           loading={loading}
         />

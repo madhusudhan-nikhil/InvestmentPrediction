@@ -4,7 +4,8 @@ import { Upload, IndianRupee, ShieldCheck, Zap, FileSpreadsheet, CheckCircle2 } 
 export default function Sidebar({
   availableCapital, setAvailableCapital,
   riskProfile, setRiskProfile,
-  onUploadCSV, onLoadSamplePortfolio,
+  recommendationCount, setRecommendationCount,
+  onUploadCSV, onLoadSamplePortfolio, onGenerateFreshCapital,
   onRunOptimization, loading
 }) {
   const [file, setFile] = useState(null);
@@ -33,10 +34,10 @@ export default function Sidebar({
       <div>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FileSpreadsheet size={18} color="#10b981" />
-          1. Portfolio Holdings File
+          1. Portfolio Holdings (Optional)
         </h2>
         <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-          Upload CSV/Excel containing columns: <code style={{ color: '#34d399' }}>[Ticker, Quantity, Purchase Price]</code>
+          Upload CSV/Excel, or generate directly for fresh capital deployment.
         </p>
 
         {/* Upload Zone */}
@@ -60,16 +61,28 @@ export default function Sidebar({
           </div>
         )}
 
-        <button
-          onClick={onLoadSamplePortfolio}
-          style={{
-            width: '100%', padding: '8px 12px', borderRadius: '8px',
-            background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)',
-            color: '#818cf8', fontSize: '12px', fontWeight: '600', cursor: 'pointer'
-          }}
-        >
-          ⚡ Load Sample Nifty 50 Holdings
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <button
+            onClick={onGenerateFreshCapital}
+            style={{
+              width: '100%', padding: '8px 12px', borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#34d399', fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+            }}
+          >
+            ✨ Fresh Capital Recommendations (No CSV)
+          </button>
+          <button
+            onClick={onLoadSamplePortfolio}
+            style={{
+              width: '100%', padding: '8px 12px', borderRadius: '8px',
+              background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)',
+              color: '#818cf8', fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+            }}
+          >
+            ⚡ Load Sample Nifty 50 Holdings
+          </button>
+        </div>
       </div>
 
       <hr style={{ borderColor: 'var(--border-color)' }} />
@@ -121,6 +134,41 @@ export default function Sidebar({
 
       <hr style={{ borderColor: 'var(--border-color)' }} />
 
+      {/* Target Recommendations Count (16 vs 50) */}
+      <div>
+        <h2 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '8px', color: '#e5e7eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          ⚡ Output Recommendations Count
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <button
+            onClick={() => { setRecommendationCount(16); onRunOptimization(16); }}
+            style={{
+              padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700',
+              background: recommendationCount === 16 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+              border: recommendationCount === 16 ? '1px solid #10b981' : '1px solid var(--border-color)',
+              color: recommendationCount === 16 ? '#34d399' : 'var(--text-muted)',
+              cursor: 'pointer'
+            }}
+          >
+            16 Cards (Standard)
+          </button>
+          <button
+            onClick={() => { setRecommendationCount(50); onRunOptimization(50); }}
+            style={{
+              padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700',
+              background: recommendationCount === 50 ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+              border: recommendationCount === 50 ? '1px solid #a855f7' : '1px solid var(--border-color)',
+              color: recommendationCount === 50 ? '#c084fc' : 'var(--text-muted)',
+              cursor: 'pointer'
+            }}
+          >
+            50 Cards (Full Universe)
+          </button>
+        </div>
+      </div>
+
+      <hr style={{ borderColor: 'var(--border-color)' }} />
+
       {/* Risk Profile Selection */}
       <div>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -157,7 +205,7 @@ export default function Sidebar({
 
       {/* Run Optimization Action Button */}
       <button
-        onClick={onRunOptimization}
+        onClick={() => onRunOptimization(recommendationCount)}
         disabled={loading}
         style={{
           marginTop: 'auto', padding: '14px', borderRadius: '12px',
@@ -169,7 +217,7 @@ export default function Sidebar({
         }}
       >
         <Zap size={18} />
-        {loading ? "Computing HRP Matrix..." : "Generate Investment Plan"}
+        {loading ? "Computing HRP Matrix..." : `Generate ${recommendationCount} Recommendations`}
       </button>
     </aside>
   );

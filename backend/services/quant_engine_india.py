@@ -16,6 +16,26 @@ SECTOR_MAPPING = {
     "LT.NS": "Capital Goods & Infra",
     "ITC.NS": "Consumer Goods",
     "BHARTIARTL.NS": "Telecom",
+    "KOTAKBANK.NS": "Financials",
+    "SBIN.NS": "Financials",
+    "AXISBANK.NS": "Financials",
+    "SUNPHARMA.NS": "Pharma",
+    "TATAMOTORS.NS": "Auto & EV",
+    "HINDUNILVR.NS": "Consumer Goods",
+    "ASIANPAINT.NS": "Consumer Goods",
+    "TITAN.NS": "Consumer Goods & Retail",
+    "MARUTI.NS": "Auto",
+    "BAJFINANCE.NS": "Financials & NBFC",
+    "TATASTEEL.NS": "Metals & Mining",
+    "NTPC.NS": "Utilities & Power",
+    "POWERGRID.NS": "Utilities & Power",
+    "ULTRACEMCO.NS": "Materials & Cement",
+    "COALINDIA.NS": "Energy & Mining",
+    "ONGC.NS": "Oil & Gas",
+    "BEL.NS": "Defense & Electronics",
+    "HAL.NS": "Defense & Aerospace",
+    "NESTLEIND.NS": "Consumer Goods",
+    "DIVISLAB.NS": "Pharma & Healthcare",
     "NIFTYBEES.NS": "Broad Market ETF",
     "JUNIORBEES.NS": "Broad Market ETF",
     "MID150BEES.NS": "Midcap ETF",
@@ -23,11 +43,21 @@ SECTOR_MAPPING = {
     "ITBEES.NS": "IT Sector ETF",
     "AUTOBEES.NS": "Auto Sector ETF",
     "PHARMABEES.NS": "Pharma Sector ETF",
+    "CPSEETF.NS": "Public Sector ETF",
+    "MAKEINDIA.NS": "Infra Sector ETF",
+    "CONSUMBEES.NS": "Consumer Sector ETF",
     "MON100.NS": "International ETF",
+    "MASPTOP50.NS": "International ETF",
+    "MAFANG.NS": "International ETF",
     "BHARATBOND.NS": "Debt & G-Sec",
+    "GSEC10YEAR.NS": "Debt & G-Sec",
     "LIQUIDBEES.NS": "Cash & Liquid",
     "GOLDBEES.NS": "Commodities & Gold",
-    "SILVERBEES.NS": "Commodities & Silver"
+    "SILVERBEES.NS": "Commodities & Silver",
+    "SETFGOLD.NS": "Commodities & Gold",
+    "HDFCGOLD.NS": "Commodities & Gold",
+    "ICICIGOLD.NS": "Commodities & Gold",
+    "AXISGOLD.NS": "Commodities & Gold"
 }
 
 TICKER_NAMES = {
@@ -39,6 +69,26 @@ TICKER_NAMES = {
     "LT.NS": "Larsen & Toubro Ltd",
     "ITC.NS": "ITC Ltd",
     "BHARTIARTL.NS": "Bharti Airtel Ltd",
+    "KOTAKBANK.NS": "Kotak Mahindra Bank Ltd",
+    "SBIN.NS": "State Bank of India",
+    "AXISBANK.NS": "Axis Bank Ltd",
+    "SUNPHARMA.NS": "Sun Pharmaceutical Industries Ltd",
+    "TATAMOTORS.NS": "Tata Motors Ltd",
+    "HINDUNILVR.NS": "Hindustan Unilever Ltd",
+    "ASIANPAINT.NS": "Asian Paints Ltd",
+    "TITAN.NS": "Titan Company Ltd",
+    "MARUTI.NS": "Maruti Suzuki India Ltd",
+    "BAJFINANCE.NS": "Bajaj Finance Ltd",
+    "TATASTEEL.NS": "Tata Steel Ltd",
+    "NTPC.NS": "NTPC Ltd",
+    "POWERGRID.NS": "Power Grid Corporation of India Ltd",
+    "ULTRACEMCO.NS": "UltraTech Cement Ltd",
+    "COALINDIA.NS": "Coal India Ltd",
+    "ONGC.NS": "Oil & Natural Gas Corporation Ltd",
+    "BEL.NS": "Bharat Electronics Ltd",
+    "HAL.NS": "Hindustan Aeronautics Ltd",
+    "NESTLEIND.NS": "Nestle India Ltd",
+    "DIVISLAB.NS": "Divi's Laboratories Ltd",
     "NIFTYBEES.NS": "Nippon India ETF Nifty BeES",
     "JUNIORBEES.NS": "Nippon India ETF Junior BeES",
     "MID150BEES.NS": "Nippon India ETF Nifty Midcap 150",
@@ -46,11 +96,21 @@ TICKER_NAMES = {
     "ITBEES.NS": "Nippon India ETF IT BeES",
     "AUTOBEES.NS": "Nippon India ETF Auto BeES",
     "PHARMABEES.NS": "Nippon India ETF Pharma BeES",
+    "CPSEETF.NS": "CPSE ETF",
+    "MAKEINDIA.NS": "Nippon India ETF Infra BeES",
+    "CONSUMBEES.NS": "Nippon India ETF Consumption",
     "MON100.NS": "Motilal Oswal Nasdaq 100 ETF",
+    "MASPTOP50.NS": "Mirae Asset S&P 500 Top 50 ETF",
+    "MAFANG.NS": "Mirae Asset NYSE FANG+ ETF",
     "BHARATBOND.NS": "Bharat Bond ETF - April 2030",
+    "GSEC10YEAR.NS": "Nippon India ETF Nifty 10yr G-Sec",
     "LIQUIDBEES.NS": "Nippon India ETF Liquid BeES",
     "GOLDBEES.NS": "Nippon India ETF Gold BeES",
-    "SILVERBEES.NS": "Nippon India ETF Silver BeES"
+    "SILVERBEES.NS": "Nippon India ETF Silver BeES",
+    "SETFGOLD.NS": "SBI ETF Gold",
+    "HDFCGOLD.NS": "HDFC Gold Exchange Traded Fund",
+    "ICICIGOLD.NS": "ICICI Prudential Gold iWIN ETF",
+    "AXISGOLD.NS": "Axis Gold ETF"
 }
 
 DEFAULT_PRICES = {
@@ -62,6 +122,26 @@ DEFAULT_PRICES = {
     "LT.NS": 3650.0,
     "ITC.NS": 490.0,
     "BHARTIARTL.NS": 1480.0,
+    "KOTAKBANK.NS": 1780.0,
+    "SBIN.NS": 840.0,
+    "AXISBANK.NS": 1180.0,
+    "SUNPHARMA.NS": 1720.0,
+    "TATAMOTORS.NS": 1020.0,
+    "HINDUNILVR.NS": 2450.0,
+    "ASIANPAINT.NS": 2950.0,
+    "TITAN.NS": 3420.0,
+    "MARUTI.NS": 12400.0,
+    "BAJFINANCE.NS": 6850.0,
+    "TATASTEEL.NS": 165.0,
+    "NTPC.NS": 395.0,
+    "POWERGRID.NS": 330.0,
+    "ULTRACEMCO.NS": 10800.0,
+    "COALINDIA.NS": 480.0,
+    "ONGC.NS": 315.0,
+    "BEL.NS": 310.0,
+    "HAL.NS": 4650.0,
+    "NESTLEIND.NS": 2520.0,
+    "DIVISLAB.NS": 4480.0,
     "NIFTYBEES.NS": 275.0,
     "JUNIORBEES.NS": 710.0,
     "MID150BEES.NS": 220.0,
@@ -69,11 +149,21 @@ DEFAULT_PRICES = {
     "ITBEES.NS": 420.0,
     "AUTOBEES.NS": 260.0,
     "PHARMABEES.NS": 185.0,
+    "CPSEETF.NS": 92.0,
+    "MAKEINDIA.NS": 115.0,
+    "CONSUMBEES.NS": 130.0,
     "MON100.NS": 165.0,
+    "MASPTOP50.NS": 95.0,
+    "MAFANG.NS": 92.0,
     "BHARATBOND.NS": 1280.0,
+    "GSEC10YEAR.NS": 105.0,
     "LIQUIDBEES.NS": 1000.0,
     "GOLDBEES.NS": 68.5,
-    "SILVERBEES.NS": 88.0
+    "SILVERBEES.NS": 88.0,
+    "SETFGOLD.NS": 67.0,
+    "HDFCGOLD.NS": 66.5,
+    "ICICIGOLD.NS": 68.0,
+    "AXISGOLD.NS": 67.5
 }
 
 TECHNICAL_SIGNALS = {
@@ -92,7 +182,11 @@ TECHNICAL_SIGNALS = {
     "ICICIBANK.NS": "NPA Reduction & NIM Expansion (RSI 60)",
     "LIQUIDBEES.NS": "Zero Duration Cash Equivalent (RSI 50)",
     "LT.NS": "National Infrastructure Capex Trend (RSI 63)",
-    "ITC.NS": "FMCG High Dividend Shield (RSI 53 Defensive)"
+    "ITC.NS": "FMCG High Dividend Shield (RSI 53 Defensive)",
+    "BEL.NS": "Defense Capex Order Book Momentum (RSI 68)",
+    "HAL.NS": "Aerospace Export Expansion (RSI 67)",
+    "TATAMOTORS.NS": "EV & Commercial Vehicle Rally (RSI 62)",
+    "SUNPHARMA.NS": "Global Generic Drug Margin Expansion (RSI 58)"
 }
 
 def normalize_ticker(raw_symbol: str) -> str:
@@ -342,10 +436,11 @@ def generate_recommendations(
     available_capital_inr: float,
     risk_profile: str = "Moderate",
     existing_holdings: List[Dict[str, Any]] = None,
-    macro_data: Dict[str, Any] = None
+    macro_data: Dict[str, Any] = None,
+    recommendation_count: int = 16
 ) -> Dict[str, Any]:
     """
-    Generate EXACTLY 10 to 20 actionable investment recommendations across 4 categories:
+    Generate actionable investment recommendations (up to 50 instruments) across 4 categories:
     Category A: Rebalance & Top-up
     Category B: Uncorrelated Diversifiers
     Category C: Systematic Alpha
@@ -365,31 +460,65 @@ def generate_recommendations(
     threat_score = macro_data.get("threat_score", 35.0)
     active_regime = macro_data.get("active_regime", "BULLISH_DOMESTIC_GROWTH")
 
-    # Define Candidate Universe
+    # Define Candidate Universe (50 High-Quality Indian Financial Instruments)
     candidates = [
-        # Category A: Rebalance & Top-up
-        {"ticker": "NIFTYBEES.NS", "name": "Nippon India ETF Nifty BeES", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.12, "exp_return": 13.5, "sharpe": 1.4, "risk_red": 8.5},
-        {"ticker": "JUNIORBEES.NS", "name": "Nippon India ETF Junior BeES", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.08, "exp_return": 15.2, "sharpe": 1.3, "risk_red": 6.2},
-        {"ticker": "MID150BEES.NS", "name": "Nippon India ETF Nifty Midcap 150", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.07, "exp_return": 16.8, "sharpe": 1.25, "risk_red": 5.8},
-        {"ticker": "RELIANCE.NS", "name": "Reliance Industries Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.09, "exp_return": 14.2, "sharpe": 1.35, "risk_red": 7.1},
-        {"ticker": "HDFCBANK.NS", "name": "HDFC Bank Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.09, "exp_return": 15.0, "sharpe": 1.45, "risk_red": 7.8},
+        # Category A: Rebalance & Core Equity (13 items)
+        {"ticker": "NIFTYBEES.NS", "name": "Nippon India ETF Nifty BeES", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.05, "exp_return": 13.5, "sharpe": 1.4, "risk_red": 8.5},
+        {"ticker": "JUNIORBEES.NS", "name": "Nippon India ETF Junior BeES", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.04, "exp_return": 15.2, "sharpe": 1.3, "risk_red": 6.2},
+        {"ticker": "MID150BEES.NS", "name": "Nippon India ETF Nifty Midcap 150", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.035, "exp_return": 16.8, "sharpe": 1.25, "risk_red": 5.8},
+        {"ticker": "RELIANCE.NS", "name": "Reliance Industries Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.04, "exp_return": 14.2, "sharpe": 1.35, "risk_red": 7.1},
+        {"ticker": "HDFCBANK.NS", "name": "HDFC Bank Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.04, "exp_return": 15.0, "sharpe": 1.45, "risk_red": 7.8},
+        {"ticker": "TCS.NS", "name": "Tata Consultancy Services Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.03, "exp_return": 14.8, "sharpe": 1.4, "risk_red": 8.0},
+        {"ticker": "INFY.NS", "name": "Infosys Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.03, "exp_return": 15.1, "sharpe": 1.38, "risk_red": 7.6},
+        {"ticker": "ICICIBANK.NS", "name": "ICICI Bank Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.035, "exp_return": 16.0, "sharpe": 1.5, "risk_red": 7.5},
+        {"ticker": "LT.NS", "name": "Larsen & Toubro Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.025, "exp_return": 15.5, "sharpe": 1.25, "risk_red": 5.5},
+        {"ticker": "BHARTIARTL.NS", "name": "Bharti Airtel Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.025, "exp_return": 16.2, "sharpe": 1.36, "risk_red": 6.4},
+        {"ticker": "ITC.NS", "name": "ITC Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.02, "exp_return": 13.0, "sharpe": 1.6, "risk_red": 12.5},
+        {"ticker": "KOTAKBANK.NS", "name": "Kotak Mahindra Bank Ltd", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.02, "exp_return": 14.5, "sharpe": 1.34, "risk_red": 7.0},
+        {"ticker": "SBIN.NS", "name": "State Bank of India", "category": "Category A", "cat_name": "Rebalance & Top-up", "badge": "emerald", "base_weight": 0.02, "exp_return": 15.8, "sharpe": 1.32, "risk_red": 6.8},
 
-        # Category B: Uncorrelated Diversifiers
-        {"ticker": "GOLDBEES.NS", "name": "Nippon India ETF Gold BeES", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.08, "exp_return": 11.8, "sharpe": 1.2, "risk_red": 14.5},
-        {"ticker": "SILVERBEES.NS", "name": "Nippon India ETF Silver BeES", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.05, "exp_return": 14.0, "sharpe": 1.1, "risk_red": 11.2},
-        {"ticker": "MON100.NS", "name": "Motilal Oswal Nasdaq 100 ETF", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.07, "exp_return": 17.5, "sharpe": 1.3, "risk_red": 12.8},
-        {"ticker": "BHARATBOND.NS", "name": "Bharat Bond ETF 2030", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.06, "exp_return": 7.8, "sharpe": 1.8, "risk_red": 18.2},
+        # Category B: Uncorrelated Diversifiers & Global Assets (12 items)
+        {"ticker": "GOLDBEES.NS", "name": "Nippon India ETF Gold BeES", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.04, "exp_return": 11.8, "sharpe": 1.2, "risk_red": 14.5},
+        {"ticker": "SILVERBEES.NS", "name": "Nippon India ETF Silver BeES", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.025, "exp_return": 14.0, "sharpe": 1.1, "risk_red": 11.2},
+        {"ticker": "MON100.NS", "name": "Motilal Oswal Nasdaq 100 ETF", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.035, "exp_return": 17.5, "sharpe": 1.3, "risk_red": 12.8},
+        {"ticker": "BHARATBOND.NS", "name": "Bharat Bond ETF 2030", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.03, "exp_return": 7.8, "sharpe": 1.8, "risk_red": 18.2},
+        {"ticker": "LIQUIDBEES.NS", "name": "Nippon India ETF Liquid BeES", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.02, "exp_return": 6.8, "sharpe": 2.1, "risk_red": 22.0},
+        {"ticker": "MASPTOP50.NS", "name": "Mirae Asset S&P 500 Top 50 ETF", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.02, "exp_return": 16.2, "sharpe": 1.28, "risk_red": 13.5},
+        {"ticker": "SETFGOLD.NS", "name": "SBI ETF Gold", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.015, "exp_return": 11.5, "sharpe": 1.18, "risk_red": 14.0},
+        {"ticker": "HDFCGOLD.NS", "name": "HDFC Gold Exchange Traded Fund", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.015, "exp_return": 11.6, "sharpe": 1.19, "risk_red": 14.2},
+        {"ticker": "ICICIGOLD.NS", "name": "ICICI Prudential Gold iWIN ETF", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.015, "exp_return": 11.7, "sharpe": 1.20, "risk_red": 14.1},
+        {"ticker": "MAFANG.NS", "name": "Mirae Asset NYSE FANG+ ETF", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.02, "exp_return": 18.5, "sharpe": 1.25, "risk_red": 11.8},
+        {"ticker": "AXISGOLD.NS", "name": "Axis Gold ETF", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.015, "exp_return": 11.5, "sharpe": 1.17, "risk_red": 14.0},
+        {"ticker": "GSEC10YEAR.NS", "name": "Nippon India ETF Nifty 10yr G-Sec", "category": "Category B", "cat_name": "Uncorrelated Diversifiers", "badge": "amber", "base_weight": 0.02, "exp_return": 7.4, "sharpe": 1.75, "risk_red": 17.5},
 
-        # Category C: Systematic Alpha
-        {"ticker": "BANKBEES.NS", "name": "Nippon India ETF Bank BeES", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.07, "exp_return": 16.5, "sharpe": 1.38, "risk_red": 6.5},
-        {"ticker": "ITBEES.NS", "name": "Nippon India ETF IT BeES", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.06, "exp_return": 17.2, "sharpe": 1.32, "risk_red": 7.0},
-        {"ticker": "TCS.NS", "name": "Tata Consultancy Services Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.05, "exp_return": 14.8, "sharpe": 1.4, "risk_red": 8.0},
-        {"ticker": "ICICIBANK.NS", "name": "ICICI Bank Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.06, "exp_return": 16.0, "sharpe": 1.5, "risk_red": 7.5},
+        # Category C: Systematic Alpha & Sectoral Momentum (13 items)
+        {"ticker": "BANKBEES.NS", "name": "Nippon India ETF Bank BeES", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.035, "exp_return": 16.5, "sharpe": 1.38, "risk_red": 6.5},
+        {"ticker": "ITBEES.NS", "name": "Nippon India ETF IT BeES", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.03, "exp_return": 17.2, "sharpe": 1.32, "risk_red": 7.0},
+        {"ticker": "AUTOBEES.NS", "name": "Nippon India ETF Auto BeES", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.025, "exp_return": 16.8, "sharpe": 1.30, "risk_red": 6.8},
+        {"ticker": "PHARMABEES.NS", "name": "Nippon India ETF Pharma BeES", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.025, "exp_return": 15.6, "sharpe": 1.28, "risk_red": 7.2},
+        {"ticker": "CPSEETF.NS", "name": "CPSE ETF", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.02, "exp_return": 18.2, "sharpe": 1.22, "risk_red": 5.8},
+        {"ticker": "MAKEINDIA.NS", "name": "Nippon India ETF Infra BeES", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.02, "exp_return": 17.8, "sharpe": 1.26, "risk_red": 6.0},
+        {"ticker": "CONSUMBEES.NS", "name": "Nippon India ETF Consumption", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.02, "exp_return": 14.5, "sharpe": 1.35, "risk_red": 8.2},
+        {"ticker": "AXISBANK.NS", "name": "Axis Bank Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.02, "exp_return": 16.4, "sharpe": 1.36, "risk_red": 7.2},
+        {"ticker": "SUNPHARMA.NS", "name": "Sun Pharmaceutical Industries Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.02, "exp_return": 15.2, "sharpe": 1.42, "risk_red": 8.5},
+        {"ticker": "TATAMOTORS.NS", "name": "Tata Motors Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.02, "exp_return": 18.0, "sharpe": 1.24, "risk_red": 5.6},
+        {"ticker": "HINDUNILVR.NS", "name": "Hindustan Unilever Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.02, "exp_return": 13.5, "sharpe": 1.55, "risk_red": 11.5},
+        {"ticker": "ASIANPAINT.NS", "name": "Asian Paints Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.015, "exp_return": 14.2, "sharpe": 1.40, "risk_red": 9.0},
+        {"ticker": "TITAN.NS", "name": "Titan Company Ltd", "category": "Category C", "cat_name": "Systematic Alpha", "badge": "purple", "base_weight": 0.015, "exp_return": 17.0, "sharpe": 1.32, "risk_red": 6.5},
 
-        # Category D: Macro & Geopolitical Hedges
-        {"ticker": "LIQUIDBEES.NS", "name": "Nippon India ETF Liquid BeES", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.04, "exp_return": 6.8, "sharpe": 2.1, "risk_red": 22.0},
-        {"ticker": "LT.NS", "name": "Larsen & Toubro Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.04, "exp_return": 15.5, "sharpe": 1.25, "risk_red": 5.5},
-        {"ticker": "ITC.NS", "name": "ITC Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.03, "exp_return": 13.0, "sharpe": 1.6, "risk_red": 12.5}
+        # Category D: Macro & Geopolitical Hedges (12 items)
+        {"ticker": "MARUTI.NS", "name": "Maruti Suzuki India Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.02, "exp_return": 15.8, "sharpe": 1.31, "risk_red": 6.4},
+        {"ticker": "BAJFINANCE.NS", "name": "Bajaj Finance Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.02, "exp_return": 18.5, "sharpe": 1.28, "risk_red": 5.8},
+        {"ticker": "TATASTEEL.NS", "name": "Tata Steel Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.015, "exp_return": 16.5, "sharpe": 1.18, "risk_red": 5.2},
+        {"ticker": "NTPC.NS", "name": "NTPC Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.02, "exp_return": 16.8, "sharpe": 1.38, "risk_red": 8.0},
+        {"ticker": "POWERGRID.NS", "name": "Power Grid Corporation of India Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.02, "exp_return": 14.5, "sharpe": 1.45, "risk_red": 10.2},
+        {"ticker": "ULTRACEMCO.NS", "name": "UltraTech Cement Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.015, "exp_return": 15.5, "sharpe": 1.30, "risk_red": 6.8},
+        {"ticker": "COALINDIA.NS", "name": "Coal India Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.015, "exp_return": 17.2, "sharpe": 1.35, "risk_red": 8.8},
+        {"ticker": "ONGC.NS", "name": "Oil & Natural Gas Corp Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.015, "exp_return": 16.0, "sharpe": 1.25, "risk_red": 7.5},
+        {"ticker": "BEL.NS", "name": "Bharat Electronics Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.02, "exp_return": 19.2, "sharpe": 1.40, "risk_red": 9.5},
+        {"ticker": "HAL.NS", "name": "Hindustan Aeronautics Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.02, "exp_return": 20.5, "sharpe": 1.42, "risk_red": 9.8},
+        {"ticker": "NESTLEIND.NS", "name": "Nestle India Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.015, "exp_return": 12.8, "sharpe": 1.58, "risk_red": 13.0},
+        {"ticker": "DIVISLAB.NS", "name": "Divi's Laboratories Ltd", "category": "Category D", "cat_name": "Macro & Geopolitical Hedges", "badge": "rose", "base_weight": 0.015, "exp_return": 16.0, "sharpe": 1.29, "risk_red": 7.0}
     ]
 
     # Black-Litterman Macro Bayesian Multipliers
@@ -440,15 +569,15 @@ def generate_recommendations(
         )
 
         # World Monitor Macro Rationale
-        if c["ticker"] in ["GOLDBEES.NS", "SILVERBEES.NS"]:
+        if c["ticker"] in ["GOLDBEES.NS", "SILVERBEES.NS", "SETFGOLD.NS", "HDFCGOLD.NS"]:
             macro_rat = f"Acts as direct hedge against USD/INR volatility (₹{macro_data.get('usd_inr', 83.45)}) and elevated Brent Crude ($84.5/bbl)."
-        elif c["ticker"] in ["BHARATBOND.NS", "LIQUIDBEES.NS"]:
+        elif c["ticker"] in ["BHARATBOND.NS", "LIQUIDBEES.NS", "GSEC10YEAR.NS"]:
             macro_rat = f"Capital preservation shield against FII institutional outflow volatility ({macro_data.get('fii_net_flow_cr', -1250)} Cr net sell)."
-        elif c["ticker"] in ["MON100.NS"]:
-            macro_rat = "Provides US tech sector diversification immune to domestic Indian food inflation & monsoon cycles."
-        elif c["ticker"] in ["RELIANCE.NS", "LT.NS"]:
-            macro_rat = "Core beneficiary of India national capex expansion and energy security transition."
-        elif c["ticker"] in ["HDFCBANK.NS", "ICICIBANK.NS", "BANKBEES.NS"]:
+        elif c["ticker"] in ["MON100.NS", "MASPTOP50.NS", "MAFANG.NS"]:
+            macro_rat = "Provides global tech sector diversification immune to domestic Indian inflation & monsoon cycles."
+        elif c["ticker"] in ["RELIANCE.NS", "LT.NS", "BEL.NS", "HAL.NS", "NTPC.NS"]:
+            macro_rat = "Core beneficiary of India national capex expansion, defense indigenization, and energy security."
+        elif c["ticker"] in ["HDFCBANK.NS", "ICICIBANK.NS", "BANKBEES.NS", "SBIN.NS", "AXISBANK.NS", "KOTAKBANK.NS"]:
             macro_rat = "Strong credit growth (>14% YoY) benefiting from RBI monetary stability and expanding domestic retail deposits."
         else:
             macro_rat = f"Aligned with current active regime [{active_regime}] for optimal risk-adjusted growth."
@@ -475,7 +604,9 @@ def generate_recommendations(
         recommendations.append(card)
         cat_summary[c["category"]] = round(cat_summary.get(c["category"], 0.0) + alloc_inr, 2)
 
-    recommendations = recommendations[:16]
+    # Slice output recommendations according to requested count (max 50)
+    target_count = min(50, max(1, recommendation_count))
+    recommendations = recommendations[:target_count]
 
     existing_diag = calculate_portfolio_diagnostics(existing_holdings, threat_score)
     health_before = existing_diag["health_score"]

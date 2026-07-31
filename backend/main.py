@@ -85,7 +85,8 @@ async def parse_portfolio(
             ticker_col = (
                 cols_lower.get("ticker") or cols_lower.get("symbol") or
                 cols_lower.get("stock") or cols_lower.get("ticker symbol") or
-                cols_lower.get("instrument") or cols_lower.get("asset") or (list(df.columns)[0] if len(df.columns) > 0 else None)
+                cols_lower.get("instrument") or cols_lower.get("asset") or
+                cols_lower.get("name") or cols_lower.get("company")
             )
             qty_col = (
                 cols_lower.get("quantity") or cols_lower.get("qty") or
@@ -143,7 +144,8 @@ async def get_recommendations(req: RecommendationRequest):
             available_capital_inr=req.available_capital_inr,
             risk_profile=req.risk_profile,
             existing_holdings=req.holdings,
-            macro_data=macro_data
+            macro_data=macro_data,
+            recommendation_count=req.count or 16
         )
         return recs
     except Exception as e:

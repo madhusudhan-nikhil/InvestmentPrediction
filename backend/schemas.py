@@ -56,6 +56,7 @@ class RecommendationRequest(BaseModel):
     holdings: Optional[List[Dict[str, Any]]] = []
     available_capital_inr: float = Field(100000.0, ge=1000)
     risk_profile: str = Field("Moderate", description="Conservative, Moderate, or Aggressive")
+    count: Optional[int] = Field(16, ge=1, le=50, description="Target recommendation count (1 to 50)")
 
 class RecommendationCard(BaseModel):
     id: int
