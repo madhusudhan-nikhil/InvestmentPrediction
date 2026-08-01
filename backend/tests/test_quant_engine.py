@@ -155,16 +155,16 @@ def test_generate_recommendations_high_threat_macro(mock_macro_high_threat):
     assert cat_summary["Category D"] > 0
     assert cat_summary["Category B"] > 0
 
-def test_generate_recommendations_50_count():
+def test_generate_recommendations_custom_count_override():
     res = generate_recommendations(
         available_capital_inr=1000000.0,
         risk_profile="Aggressive",
         existing_holdings=[],
-        recommendation_count=50
+        recommendation_count=30
     )
 
-    assert res["recommendation_count"] == 50
-    assert len(res["recommendations"]) == 50
+    assert res["recommendation_count"] == 30
+    assert len(res["recommendations"]) == 30
 
     total_allocated = sum(r["allocation_inr"] for r in res["recommendations"])
     assert abs(total_allocated - 1000000.0) < 100.0

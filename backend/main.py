@@ -147,7 +147,7 @@ async def get_recommendations(req: RecommendationRequest):
             risk_profile=req.risk_profile,
             existing_holdings=req.holdings,
             macro_data=macro_data,
-            recommendation_count=req.count or 16
+            recommendation_count=req.count
         )
         return recs
     except Exception as e:
