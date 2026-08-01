@@ -32,9 +32,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # SECURITY: Use specific origins instead of wildcard (*) when credentials are allowed to prevent CSRF and unauthorized cross-origin access.
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000").split(","),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -55,7 +56,8 @@ async def get_macro_pulse():
         return pulse
     except Exception as e:
         logger.error(f"Error fetching macro pulse: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # SECURITY: Fail securely by genericizing error messages. Do not leak internal stack traces or details to the client.
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/parse-portfolio", response_model=PortfolioDiagnostics)
 async def parse_portfolio(
@@ -150,7 +152,8 @@ async def get_recommendations(req: RecommendationRequest):
         return recs
     except Exception as e:
         logger.error(f"Error generating recommendations: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # SECURITY: Fail securely by genericizing error messages. Do not leak internal stack traces or details to the client.
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/stress-test", response_model=StressTestResponse)
 async def run_stress_test(req: StressTestRequest):
