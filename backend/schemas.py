@@ -85,19 +85,46 @@ class RecommendationResponse(BaseModel):
     category_summary: Dict[str, float]
     optimization_method: str = "Hierarchical Risk Parity (HRP) + Black-Litterman World Monitor Macro Tilt"
 
+class ProbableScenario(BaseModel):
+    id: str
+    title: str
+    category: str  # e.g., "Energy Crisis", "Monetary Policy", "Geopolitical Tension"
+    severity_badge: str  # "CRITICAL", "HIGH", "MODERATE"
+    probability_pct: float  # e.g., 78.0
+    summary: str
+    trigger_factors: List[str]
+    shocks: Dict[str, float]  # crude_oil_spike_pct, usd_inr_depreciation_pct, etc.
+    estimated_impact_pct: float
+    recommended_hedges: List[str]
+
+class ProbableScenariosResponse(BaseModel):
+    as_of: str
+    total_scenarios: int
+    world_monitor_summary: str
+    scenarios: List[ProbableScenario]
+
 class StressTestRequest(BaseModel):
-    crude_oil_spike_pct: float = 0.0    # e.g. +20%
-    usd_inr_depreciation_pct: float = 0.0 # e.g. +5%
-    fii_outflow_spike_cr: float = 0.0    # e.g. -5000 Cr
-    vix_spike_pct: float = 0.0          # e.g. +30%
+    crude_oil_spike_pct: float = 0.0      # e.g. +20%
+    usd_inr_depreciation_pct: float = 0.0   # e.g. +5%
+    fii_outflow_spike_cr: float = 0.0      # e.g. -5000 Cr
+    vix_spike_pct: float = 0.0            # e.g. +30%
+    rbi_rate_hike_bps: float = 0.0         # e.g. +50 bps
+    gdelt_escalation_pct: float = 0.0      # e.g. +40%
+    dxy_rally_pct: float = 0.0             # e.g. +5%
+    scenario_id: Optional[str] = None
     holdings: List[Dict[str, Any]] = []
 
 class StressTestResponse(BaseModel):
     simulated_threat_score: float
     simulated_regime: str
+    simulated_regime_label: str
     estimated_portfolio_impact_pct: float
+    estimated_var_increase_pct: float
     high_vulnerability_sectors: List[str]
+    resilient_sectors: List[str]
     defensive_recommendations: List[str]
+    asset_class_impact_breakdown: Dict[str, float]
+    scenario_narrative: str
 
 class BrokerExecuteRequest(BaseModel):
     broker_name: str = Field("Zerodha Kite", description="Zerodha Kite, Angel One, or Upstox")

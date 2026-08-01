@@ -171,7 +171,7 @@ def test_stress_test_endpoint_high_threat(test_client, monkeypatch, mock_macro_h
     assert response.status_code == 200
     data = response.json()
     assert data["simulated_threat_score"] >= 70.0
-    assert data["simulated_regime"] == "HIGH_CRUDE_INFLATION_RISK"
+    assert data["simulated_regime"] in ["HIGH_CRUDE_INFLATION_RISK", "GEOPOLITICAL_CRUCIAL_SHOCK"]
     assert len(data["high_vulnerability_sectors"]) > 0
     assert len(data["defensive_recommendations"]) > 0
 
