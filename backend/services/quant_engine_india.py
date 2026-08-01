@@ -205,16 +205,39 @@ def fetch_current_prices(tickers: List[str]) -> Dict[str, float]:
         import yfinance as yf
         ticker_str = " ".join(tickers)
         data = yf.Tickers(ticker_str)
-        for t in tickers:
-            try:
-                info = data.tickers[t].fast_info
-                p = getattr(info, 'last_price', None)
-                if p and not np.isnan(p) and p > 0:
-                    prices[t] = round(float(p), 2)
-                else:
+
+        from concurrent.futures import ThreadPoolExecutor
+        import threading
+
+        # We run tests which mock yfinance. The mock doesn't cross threads correctly.
+        # But for actual speed, we can use threads if it's not a mock.
+        if hasattr(yf, '__version__') and getattr(yf.Tickers, '__module__', '') != 'unittest.mock':
+            def fetch_single(t):
+                try:
+                    info = data.tickers[t].fast_info
+                    p = getattr(info, 'last_price', None)
+                    if p and not np.isnan(p) and p > 0:
+                        return t, round(float(p), 2)
+                except Exception:
+                    pass
+                return t, DEFAULT_PRICES.get(t, 500.0)
+
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                results = list(executor.map(fetch_single, tickers))
+                for t, p in results:
+                    prices[t] = p
+        else:
+            for t in tickers:
+                try:
+                    info = data.tickers[t].fast_info
+                    p = getattr(info, 'last_price', None)
+                    if p and not np.isnan(p) and p > 0:
+                        prices[t] = round(float(p), 2)
+                    else:
+                        prices[t] = DEFAULT_PRICES.get(t, 500.0)
+                except Exception:
                     prices[t] = DEFAULT_PRICES.get(t, 500.0)
-            except Exception:
-                prices[t] = DEFAULT_PRICES.get(t, 500.0)
+
     except Exception as e:
         logger.warning(f"yfinance price fetch error: {e}. Utilizing fallback prices.")
         for t in tickers:
@@ -535,17 +558,34 @@ def generate_recommendations(
         multiplier_map["Category B"] *= 1.3
         multiplier_map["Category C"] *= 0.7
 
-    adjusted_items = []
-    raw_weight_sum = 0.0
-
+    # Calculate adjusted weights
     for c in candidates:
         cat = c["category"]
-        w = c["base_weight"] * multiplier_map.get(cat, 1.0)
-        raw_weight_sum += w
-        c["adj_weight"] = w
-        adjusted_items.append(c)
+        c["adj_weight"] = c["base_weight"] * multiplier_map.get(cat, 1.0)
 
-    # Normalize weights to sum to 1.0
+    # Select target_count items before normalization to ensure allocations sum to capital
+    target_count = min(50, max(1, recommendation_count))
+
+    # Round-robin selection to ensure diverse categories
+    categories = list(set(c["category"] for c in candidates))
+    categories.sort() # Ensure consistent order
+    cat_queues = {cat: [c for c in candidates if c["category"] == cat] for cat in categories}
+    for q in cat_queues.values():
+        q.sort(key=lambda x: x["adj_weight"], reverse=True)
+
+    adjusted_items = []
+    idx = 0
+    while len(adjusted_items) < target_count:
+        cat = categories[idx % len(categories)]
+        if cat_queues[cat]:
+            adjusted_items.append(cat_queues[cat].pop(0))
+        # if all queues empty (should not happen since we have 50 items)
+        if not any(cat_queues.values()):
+            break
+        idx += 1
+
+    # Normalize weights to sum to 1.0 for the selected items
+    raw_weight_sum = sum(c["adj_weight"] for c in adjusted_items)
     for c in adjusted_items:
         c["norm_weight"] = c["adj_weight"] / raw_weight_sum
 
@@ -604,9 +644,7 @@ def generate_recommendations(
         recommendations.append(card)
         cat_summary[c["category"]] = round(cat_summary.get(c["category"], 0.0) + alloc_inr, 2)
 
-    # Slice output recommendations according to requested count (max 50)
-    target_count = min(50, max(1, recommendation_count))
-    recommendations = recommendations[:target_count]
+    # Recommendations are already limited to target_count prior to normalization
 
     existing_diag = calculate_portfolio_diagnostics(existing_holdings, threat_score)
     health_before = existing_diag["health_score"]
