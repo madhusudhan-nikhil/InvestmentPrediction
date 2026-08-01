@@ -137,7 +137,12 @@ def test_generate_recommendations_risk_profiles(risk_profile):
     assert len(res["recommendations"]) == res["recommendation_count"]
 
     total_allocated = sum(r["allocation_inr"] for r in res["recommendations"])
-    assert abs(total_allocated - capital) < 100.0
+    assert total_allocated <= capital
+
+    # Verify unit_price * suggested_quantity equals allocation_inr exactly for all cards
+    for r in res["recommendations"]:
+        assert r["suggested_quantity"] >= 1
+        assert abs(r["allocation_inr"] - round(r["suggested_quantity"] * r["unit_price"], 2)) < 0.05
 
     # Ensure all 4 categories are represented
     categories = set(r["category"] for r in res["recommendations"])
@@ -198,3 +203,34 @@ def test_generate_recommendations_card_fields():
         assert card["quantitative_rationale"] != ""
         assert card["macro_rationale"] != ""
         assert card["expected_return_pct"] > 0
+        assert card["unit_price"] > 0
+        assert card["target_selling_price"] > card["unit_price"]
+        assert card["profit_per_share_inr"] > 0
+        assert card["total_expected_stock_profit_inr"] > 0
+        assert len(card["target_price_analytical_rationale"]) > 0
+
+def test_calculate_target_selling_points():
+    from services.quant_engine_india import calculate_target_selling_points
+
+    res = calculate_target_selling_points(
+        capital_inr=100000.0,
+        target_profit_inr=5000.0,
+        holding_days_target=30,
+        risk_profile="Moderate"
+    )
+
+    assert res["capital_inr"] == 100000.0
+    assert res["target_profit_inr"] == 5000.0
+    assert res["target_return_pct"] == 5.0
+    assert res["total_invested_inr"] > 0
+    assert res["total_expected_profit_inr"] > 0
+    assert "days" in res["portfolio_probable_exit_window"]
+    assert len(res["recommendations"]) > 0
+
+    for card in res["recommendations"]:
+        assert card["current_unit_price"] > 0
+        assert card["target_selling_price"] > card["current_unit_price"]
+        assert card["profit_per_share_inr"] > 0
+        assert card["total_expected_profit_inr"] > 0
+        assert card["estimated_holding_days"] > 0
+        assert len(card["probable_exit_date"]) > 0

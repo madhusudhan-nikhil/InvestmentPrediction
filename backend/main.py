@@ -15,12 +15,12 @@ from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
     RecommendationRequest, RecommendationResponse, StressTestRequest, StressTestResponse,
     BrokerExecuteRequest, BrokerExecuteResponse, TickerItem, TickerSaveRequest, TickerSyncResponse,
-    ProbableScenariosResponse
+    ProbableScenariosResponse, TargetSellingPointRequest, TargetSellingPointResponse
 )
 from services.mcp_client import mcp_client
 from services.quant_engine_india import (
     calculate_portfolio_diagnostics, generate_recommendations, normalize_ticker,
-    get_all_tickers, save_ticker_dataset, sync_top_tickers_dataset
+    get_all_tickers, save_ticker_dataset, sync_top_tickers_dataset, calculate_target_selling_points
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -165,6 +165,26 @@ async def get_recommendations(req: RecommendationRequest):
     except Exception as e:
         logger.error(f"Error generating recommendations: {e}")
         # SECURITY: Fail securely by genericizing error messages. Do not leak internal stack traces or details to the client.
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/api/target-selling-point", response_model=TargetSellingPointResponse)
+async def get_target_selling_point(req: TargetSellingPointRequest):
+    """
+    Calculate real-time current ticker rates, target selling prices per share, expected profit per stock,
+    and estimated holding period & probable sell dates based on capital and expected profit target.
+    """
+    try:
+        macro_data = await mcp_client.get_macro_pulse()
+        result = calculate_target_selling_points(
+            capital_inr=req.capital_inr,
+            target_profit_inr=req.target_profit_inr,
+            holding_days_target=req.holding_days_target,
+            risk_profile=req.risk_profile,
+            macro_data=macro_data
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error calculating target selling points: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/stress-test", response_model=StressTestResponse)

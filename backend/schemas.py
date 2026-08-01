@@ -65,6 +65,10 @@ class RecommendationCard(BaseModel):
     category: str  # Category A, B, C, D
     category_name: str
     category_badge_color: str
+    unit_price: float = 0.0
+    target_selling_price: float = 0.0
+    profit_per_share_inr: float = 0.0
+    total_expected_stock_profit_inr: float = 0.0
     allocation_inr: float
     allocation_pct: float
     suggested_quantity: int
@@ -73,6 +77,7 @@ class RecommendationCard(BaseModel):
     technical_momentum_signal: str # e.g., "EMA Bullish Cross (RSI 58)"
     quantitative_rationale: str
     macro_rationale: str
+    target_price_analytical_rationale: str = ""
     expected_return_pct: float
 
 class RecommendationResponse(BaseModel):
@@ -162,3 +167,37 @@ class TickerSyncResponse(BaseModel):
     total_tickers: int
     synced_at: str
     tickers: List[TickerItem]
+
+class TargetSellingPointRequest(BaseModel):
+    capital_inr: float = Field(100000.0, ge=1000.0)
+    target_profit_inr: float = Field(5000.0, ge=100.0)
+    holding_days_target: int = Field(30, ge=1)
+    risk_profile: str = Field("Moderate", description="Conservative, Moderate, or Aggressive")
+
+class TargetSellingPointCard(BaseModel):
+    ticker: str
+    instrument_name: str
+    category: str
+    category_name: str
+    category_badge_color: str
+    current_unit_price: float
+    suggested_quantity: int
+    total_allocated_inr: float
+    allocation_pct: float
+    target_selling_price: float
+    profit_per_share_inr: float
+    total_expected_profit_inr: float
+    expected_gain_pct: float
+    estimated_holding_days: int
+    probable_exit_date: str
+    technical_momentum_signal: str
+    macro_rationale: str
+
+class TargetSellingPointResponse(BaseModel):
+    capital_inr: float
+    target_profit_inr: float
+    target_return_pct: float
+    total_invested_inr: float
+    total_expected_profit_inr: float
+    portfolio_probable_exit_window: str
+    recommendations: List[TargetSellingPointCard]
