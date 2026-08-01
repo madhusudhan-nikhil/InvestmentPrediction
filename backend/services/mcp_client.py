@@ -67,16 +67,28 @@ class WorldMonitorMCPClient:
 
         total_threat_score = round(min(100.0, max(0.0, crude_threat + vix_threat + currency_threat + fii_threat + gdelt_threat)), 1)
 
-        # Determine Market Regime
-        if brent_price > 85.0:
+        # Determine Market Regime dynamically based on dominant macro threat driver
+        if brent_price > 90.0 and rbi_repo_rate >= 6.75:
+            regime = "STAGFLATION_WARNING"
+            regime_desc = "Crude oil inflation combined with tight monetary policy poses stagflation risks to equity valuations."
+        elif brent_price > 85.0:
             regime = "HIGH_CRUDE_INFLATION_RISK"
             regime_desc = "Elevated Brent Crude oil prices pose import bill inflation and fiscal deficit pressures on Indian equities."
+        elif usd_inr > 84.2 or dxy_index > 106.0:
+            regime = "FX_DEVALUATION_PRESSURE"
+            regime_desc = "Strong US Dollar Index and USD/INR FX pressure triggering foreign capital outflows and import cost inflation."
         elif fii_net_flow < -2000.0:
             regime = "FII_OUTFLOW_VOLATILITY"
             regime_desc = "Heavy institutional FII selling triggering liquidity tightening and short-term volatility."
         elif india_vix > 20.0:
             regime = "RISK_OFF_GOLD_FLIGHT"
             regime_desc = "High market turbulence and risk-off sentiment favor gold, defensive debt, and dividend stocks."
+        elif gdelt_tension > 60.0:
+            regime = "GLOBAL_SUPPLY_CHAIN_BOTTLENECK"
+            regime_desc = "High global geopolitical conflict scores threaten maritime logistics and component supply chains."
+        elif rbi_repo_rate >= 6.75:
+            regime = "HAWKISH_MONETARY_TIGHTENING"
+            regime_desc = "Elevated central bank benchmark rates constrain corporate borrowing and compress growth equity multiples."
         else:
             regime = "BULLISH_DOMESTIC_GROWTH"
             regime_desc = "Robust domestic DII inflows, stable inflation, and strong Indian corporate earnings guidance."

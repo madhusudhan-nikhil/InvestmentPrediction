@@ -29,7 +29,10 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <aside className="glass-panel" style={{
+      padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px',
+      alignSelf: 'start', position: 'sticky', top: '24px', height: 'fit-content'
+    }}>
       <div>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FileSpreadsheet size={18} color="#10b981" />
@@ -160,7 +163,7 @@ export default function Sidebar({
         onClick={() => onRunOptimization()}
         disabled={loading}
         style={{
-          marginTop: 'auto', padding: '14px', borderRadius: '12px',
+          marginTop: '8px', padding: '14px', borderRadius: '12px',
           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
           color: '#fff', border: 'none', fontSize: '15px', fontWeight: '700',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',

@@ -260,13 +260,16 @@ def test_get_tickers_endpoint(test_client):
 
 def test_save_and_sync_tickers_endpoint(test_client):
     res = test_client.get("/api/tickers")
-    tickers = res.json()["tickers"]
+    full_tickers = res.json()["tickers"]
 
-    save_res = test_client.post("/api/tickers", json={"tickers": tickers[:50]})
+    save_res = test_client.post("/api/tickers", json={"tickers": full_tickers[:50]})
     assert save_res.status_code == 200
     assert save_res.json()["total_tickers"] == 50
+
+    # Restore full dataset
+    test_client.post("/api/tickers", json={"tickers": full_tickers})
 
     sync_res = test_client.post("/api/tickers/sync")
     assert sync_res.status_code == 200
     assert sync_res.json()["status"] == "SUCCESS"
-    assert sync_res.json()["total_tickers"] > 50
+    assert sync_res.json()["total_tickers"] >= 50

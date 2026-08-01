@@ -19,7 +19,11 @@ async def test_get_macro_pulse_default_returns_valid_structure():
         "HIGH_CRUDE_INFLATION_RISK",
         "FII_OUTFLOW_VOLATILITY",
         "RISK_OFF_GOLD_FLIGHT",
-        "BULLISH_DOMESTIC_GROWTH"
+        "BULLISH_DOMESTIC_GROWTH",
+        "STAGFLATION_WARNING",
+        "FX_DEVALUATION_PRESSURE",
+        "GLOBAL_SUPPLY_CHAIN_BOTTLENECK",
+        "HAWKISH_MONETARY_TIGHTENING"
     ]
     assert "regime_description" in pulse
     assert pulse["brent_crude_usd"] > 0
