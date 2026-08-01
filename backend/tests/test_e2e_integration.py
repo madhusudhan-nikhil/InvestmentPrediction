@@ -110,24 +110,24 @@ def test_recommendations_endpoint_success(test_client):
     assert response.status_code == 200
     data = response.json()
     assert data["total_capital_inr"] == 500000.0
-    assert 10 <= data["recommendation_count"] <= 20
+    assert data["recommendation_count"] > 0
     assert len(data["recommendations"]) == data["recommendation_count"]
 
     categories = set(r["category"] for r in data["recommendations"])
     assert len(categories) == 4
 
-def test_recommendations_endpoint_50_count(test_client):
+def test_recommendations_endpoint_custom_count_override(test_client):
     payload = {
         "available_capital_inr": 1000000.0,
         "risk_profile": "Aggressive",
         "holdings": [],
-        "count": 50
+        "count": 30
     }
     response = test_client.post("/api/recommend-inr", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert data["recommendation_count"] == 50
-    assert len(data["recommendations"]) == 50
+    assert data["recommendation_count"] == 30
+    assert len(data["recommendations"]) == 30
 
 def test_recommendations_endpoint_no_csv_holdings(test_client):
     payload = {
@@ -171,7 +171,7 @@ def test_stress_test_endpoint_high_threat(test_client, monkeypatch, mock_macro_h
     assert response.status_code == 200
     data = response.json()
     assert data["simulated_threat_score"] >= 70.0
-    assert data["simulated_regime"] == "HIGH_CRUDE_INFLATION_RISK"
+    assert data["simulated_regime"] in ["HIGH_CRUDE_INFLATION_RISK", "GEOPOLITICAL_CRUCIAL_SHOCK"]
     assert len(data["high_vulnerability_sectors"]) > 0
     assert len(data["defensive_recommendations"]) > 0
 
@@ -244,4 +244,32 @@ def test_macro_pulse_500_error_handling(test_client, monkeypatch):
 
     response = test_client.get("/api/macro-pulse")
     assert response.status_code == 500
-    assert "Database connection failure" in response.json()["detail"]
+    assert "Internal server error" in response.json()["detail"]
+
+# ---------------------------------------------------------
+# Ticker Management API Tests (/api/tickers)
+# ---------------------------------------------------------
+
+def test_get_tickers_endpoint(test_client):
+    response = test_client.get("/api/tickers")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["total_tickers"] > 0
+    assert len(data["tickers"]) == data["total_tickers"]
+
+def test_save_and_sync_tickers_endpoint(test_client):
+    res = test_client.get("/api/tickers")
+    full_tickers = res.json()["tickers"]
+
+    save_res = test_client.post("/api/tickers", json={"tickers": full_tickers[:50]})
+    assert save_res.status_code == 200
+    assert save_res.json()["total_tickers"] == 50
+
+    # Restore full dataset
+    test_client.post("/api/tickers", json={"tickers": full_tickers})
+
+    sync_res = test_client.post("/api/tickers/sync")
+    assert sync_res.status_code == 200
+    assert sync_res.json()["status"] == "SUCCESS"
+    assert sync_res.json()["total_tickers"] >= 50

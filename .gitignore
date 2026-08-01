@@ -1,3 +1,9 @@
 /.pytest_cache
 /implementation_plan.md
 /tracker.md
+
+# Python compiled files & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
