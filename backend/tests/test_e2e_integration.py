@@ -244,4 +244,4 @@ def test_macro_pulse_500_error_handling(test_client, monkeypatch):
 
     response = test_client.get("/api/macro-pulse")
     assert response.status_code == 500
-    assert "Database connection failure" in response.json()["detail"]
+    assert "Internal server error" in response.json()["detail"]
