@@ -14,11 +14,12 @@ import pandas as pd
 from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
     RecommendationRequest, RecommendationResponse, StressTestRequest, StressTestResponse,
-    BrokerExecuteRequest, BrokerExecuteResponse
+    BrokerExecuteRequest, BrokerExecuteResponse, TickerItem, TickerSaveRequest, TickerSyncResponse
 )
 from services.mcp_client import mcp_client
 from services.quant_engine_india import (
-    calculate_portfolio_diagnostics, generate_recommendations, normalize_ticker
+    calculate_portfolio_diagnostics, generate_recommendations, normalize_ticker,
+    get_all_tickers, save_ticker_dataset, sync_top_tickers_dataset
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -219,6 +220,33 @@ async def execute_broker_orders(req: BrokerExecuteRequest):
         "orders_summary": summary,
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
+
+@app.get("/api/tickers")
+async def get_tickers():
+    """Retrieve full raw ticker dataset from JSON storage."""
+    tickers = get_all_tickers()
+    return {"status": "SUCCESS", "total_tickers": len(tickers), "tickers": tickers}
+
+@app.post("/api/tickers")
+async def save_tickers(req: TickerSaveRequest):
+    """Update and persist modified ticker dataset in JSON database."""
+    try:
+        raw_items = [item.model_dump() for item in req.tickers]
+        res = save_ticker_dataset(raw_items)
+        return res
+    except Exception as e:
+        logger.error(f"Error saving ticker dataset: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save ticker dataset")
+
+@app.post("/api/tickers/sync", response_model=TickerSyncResponse)
+async def sync_tickers():
+    """On-demand synchronization of Top 100 NSE & Top 500 BSE securities dataset."""
+    try:
+        res = sync_top_tickers_dataset()
+        return res
+    except Exception as e:
+        logger.error(f"Error syncing ticker dataset: {e}")
+        raise HTTPException(status_code=500, detail="Failed to sync ticker dataset")
 
 if __name__ == "__main__":
     import uvicorn

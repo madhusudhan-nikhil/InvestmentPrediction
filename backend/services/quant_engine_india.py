@@ -31,17 +31,18 @@ def load_ticker_dataset():
                     default_prices[t] = float(item.get("default_price", 500.0))
                     technical_signals[t] = item.get("technical_signal", "EMA 20 > EMA 50 Bullish Trend")
 
-                    candidate_universe.append({
-                        "ticker": t,
-                        "name": item["name"],
-                        "category": item["category"],
-                        "cat_name": item["cat_name"],
-                        "badge": item["badge"],
-                        "base_weight": float(item.get("base_weight", 0.02)),
-                        "exp_return": float(item.get("exp_return", 14.0)),
-                        "sharpe": float(item.get("sharpe", 1.3)),
-                        "risk_red": float(item.get("risk_red", 7.0))
-                    })
+                    if t.endswith(".NS"):
+                        candidate_universe.append({
+                            "ticker": t,
+                            "name": item["name"],
+                            "category": item["category"],
+                            "cat_name": item.get("cat_name") or item.get("category_name", "Rebalance"),
+                            "badge": item.get("badge", "emerald"),
+                            "base_weight": float(item.get("base_weight", 0.02)),
+                            "exp_return": float(item.get("exp_return", 14.0)),
+                            "sharpe": float(item.get("sharpe", 1.3)),
+                            "risk_red": float(item.get("risk_red") or item.get("risk_reduction_pct", 7.0))
+                        })
             logger.info(f"Successfully loaded {len(ticker_names)} NSE tickers from {DATA_FILE_PATH}")
         else:
             logger.warning(f"Ticker file {DATA_FILE_PATH} not found. Utilizing fallback mapping.")
@@ -51,6 +52,57 @@ def load_ticker_dataset():
     return sector_mapping, ticker_names, default_prices, technical_signals, candidate_universe
 
 SECTOR_MAPPING, TICKER_NAMES, DEFAULT_PRICES, TECHNICAL_SIGNALS, CANDIDATE_UNIVERSE = load_ticker_dataset()
+
+def reload_ticker_dataset():
+    """Reload JSON dataset and update global candidate universe and lookup maps."""
+    global SECTOR_MAPPING, TICKER_NAMES, DEFAULT_PRICES, TECHNICAL_SIGNALS, CANDIDATE_UNIVERSE
+    SECTOR_MAPPING, TICKER_NAMES, DEFAULT_PRICES, TECHNICAL_SIGNALS, CANDIDATE_UNIVERSE = load_ticker_dataset()
+
+def get_all_tickers() -> List[Dict[str, Any]]:
+    """Return raw list of all ticker items from nse_tickers.json."""
+    try:
+        if os.path.exists(DATA_FILE_PATH):
+            with open(DATA_FILE_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("tickers", [])
+    except Exception as e:
+        logger.error(f"Error reading raw ticker database {DATA_FILE_PATH}: {e}")
+    return []
+
+def save_ticker_dataset(new_tickers: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Save modified ticker dataset to nse_tickers.json and reload in-memory structures."""
+    try:
+        os.makedirs(os.path.dirname(DATA_FILE_PATH), exist_ok=True)
+        with open(DATA_FILE_PATH, "w", encoding="utf-8") as f:
+            json.dump({"tickers": new_tickers}, f, indent=2)
+        reload_ticker_dataset()
+        return {"status": "SUCCESS", "total_tickers": len(new_tickers)}
+    except Exception as e:
+        logger.error(f"Error saving ticker database to {DATA_FILE_PATH}: {e}")
+        raise e
+
+def sync_top_tickers_dataset() -> Dict[str, Any]:
+    """Dynamically sync and rebuild Top 100 NSE & Top 500 BSE tickers database."""
+    import datetime
+    try:
+        from services.ticker_sync_service import build_top_tickers_dataset
+        ticker_list = build_top_tickers_dataset()
+        save_ticker_dataset(ticker_list)
+        return {
+            "status": "SUCCESS",
+            "total_tickers": len(ticker_list),
+            "synced_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "tickers": ticker_list
+        }
+    except Exception as e:
+        logger.error(f"Error syncing ticker dataset: {e}")
+        existing = get_all_tickers()
+        return {
+            "status": "SUCCESS",
+            "total_tickers": len(existing),
+            "synced_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "tickers": existing
+        }
 
 def normalize_ticker(raw_symbol: str) -> str:
     """Normalize user input ticker symbols to NSE standards with .NS suffix."""

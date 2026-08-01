@@ -245,3 +245,28 @@ def test_macro_pulse_500_error_handling(test_client, monkeypatch):
     response = test_client.get("/api/macro-pulse")
     assert response.status_code == 500
     assert "Internal server error" in response.json()["detail"]
+
+# ---------------------------------------------------------
+# Ticker Management API Tests (/api/tickers)
+# ---------------------------------------------------------
+
+def test_get_tickers_endpoint(test_client):
+    response = test_client.get("/api/tickers")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["total_tickers"] > 0
+    assert len(data["tickers"]) == data["total_tickers"]
+
+def test_save_and_sync_tickers_endpoint(test_client):
+    res = test_client.get("/api/tickers")
+    tickers = res.json()["tickers"]
+
+    save_res = test_client.post("/api/tickers", json={"tickers": tickers[:50]})
+    assert save_res.status_code == 200
+    assert save_res.json()["total_tickers"] == 50
+
+    sync_res = test_client.post("/api/tickers/sync")
+    assert sync_res.status_code == 200
+    assert sync_res.json()["status"] == "SUCCESS"
+    assert sync_res.json()["total_tickers"] > 50

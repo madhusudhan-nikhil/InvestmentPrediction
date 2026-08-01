@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import DiagnosticsPanel from './components/DiagnosticsPanel';
 import RecommendationPanel from './components/RecommendationPanel';
 import MacroSimulator from './components/MacroSimulator';
+import TickerManager from './components/TickerManager';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -17,7 +18,7 @@ export default function App() {
   const [riskProfile, setRiskProfile] = useState("Moderate");
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeMainTab, setActiveMainTab] = useState("dashboard"); // 'dashboard' or 'simulator'
+  const [activeMainTab, setActiveMainTab] = useState("dashboard"); // 'dashboard', 'simulator', or 'tickers'
 
   // Initial load: fetch macro pulse and generate recommendations directly
   useEffect(() => {
@@ -68,40 +69,44 @@ export default function App() {
   };
 
   const parseHoldingsList = async (holdingsList) => {
-    try {
-      const formData = new FormData();
-      formData.append('raw_holdings', JSON.stringify(holdingsList));
-      const res = await axios.post(`${API_BASE_URL}/api/parse-portfolio`, formData);
-      setDiagnostics(res.data);
-    } catch (e) {
-      console.error("Error parsing portfolio:", e);
-    }
-  };
-
-  const handleUploadCSV = async (file) => {
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await axios.post(`${API_BASE_URL}/api/parse-portfolio`, formData);
+      const res = await axios.post(`${API_BASE_URL}/api/parse-portfolio`, { holdings: holdingsList });
       setDiagnostics(res.data);
-      if (res.data.holdings_normalized) {
-        const parsed = res.data.holdings_normalized.map(h => ({
-          Ticker: h.ticker,
-          Quantity: h.quantity,
-          "Purchase Price": h.purchase_price
-        }));
-        setHoldings(parsed);
-        await fetchRecommendations(availableCapital, riskProfile, parsed);
-      }
     } catch (e) {
-      alert("Failed to parse uploaded CSV. Please check formatting.");
+      console.error("Error parsing holdings:", e);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchRecommendations = async (capital, risk, currentHoldings) => {
+  const handleUploadCSV = async (file) => {
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/parse-portfolio`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setDiagnostics(res.data);
+
+      const parsedHoldings = res.data.holdings_normalized.map(h => ({
+        Ticker: h.ticker,
+        Quantity: h.quantity,
+        "Purchase Price": h.purchase_price
+      }));
+      setHoldings(parsedHoldings);
+
+      await fetchRecommendations(availableCapital, riskProfile, parsedHoldings);
+    } catch (e) {
+      alert(e.response?.data?.detail || "Failed to parse portfolio file");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRecommendations = async (capital, risk, currentHoldings = holdings) => {
     setLoading(true);
     try {
       const res = await axios.post(`${API_BASE_URL}/api/recommend-inr`, {
@@ -150,13 +155,13 @@ export default function App() {
           {/* Main Navigation Tabs */}
           <div style={{
             display: 'flex', gap: '12px', marginBottom: '20px',
-            borderBottom: '1px solid var(--border-color)', paddingBottom: '12px'
+            borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', overflowX: 'auto'
           }}>
             <button
               onClick={() => setActiveMainTab('dashboard')}
               style={{
                 padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
                 background: activeMainTab === 'dashboard' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)',
                 border: activeMainTab === 'dashboard' ? '1px solid #10b981' : '1px solid var(--border-color)',
                 color: activeMainTab === 'dashboard' ? '#34d399' : 'var(--text-muted)'
@@ -168,13 +173,25 @@ export default function App() {
               onClick={() => setActiveMainTab('simulator')}
               style={{
                 padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
                 background: activeMainTab === 'simulator' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.04)',
                 border: activeMainTab === 'simulator' ? '1px solid #f59e0b' : '1px solid var(--border-color)',
                 color: activeMainTab === 'simulator' ? '#fbbf24' : 'var(--text-muted)'
               }}
             >
               ⚡ Geopolitical Macro Stress Simulator
+            </button>
+            <button
+              onClick={() => setActiveMainTab('tickers')}
+              style={{
+                padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
+                background: activeMainTab === 'tickers' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                border: activeMainTab === 'tickers' ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
+                color: activeMainTab === 'tickers' ? '#c084fc' : 'var(--text-muted)'
+              }}
+            >
+              ⚙️ Ticker Universe Manager
             </button>
           </div>
 
@@ -190,6 +207,10 @@ export default function App() {
 
           {activeMainTab === 'simulator' && (
             <MacroSimulator holdings={holdings} API_BASE_URL={API_BASE_URL} />
+          )}
+
+          {activeMainTab === 'tickers' && (
+            <TickerManager />
           )}
         </main>
       </div>

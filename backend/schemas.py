@@ -112,3 +112,26 @@ class BrokerExecuteResponse(BaseModel):
     total_executed_value_inr: float
     orders_summary: List[Dict[str, Any]]
     timestamp: str
+
+class TickerItem(BaseModel):
+    ticker: str
+    name: str
+    sector: str
+    default_price: float = 500.0
+    category: str = "Category A"
+    category_name: Optional[str] = "Rebalance & Top-up"
+    badge: Optional[str] = "emerald"
+    base_weight: Optional[float] = 0.02
+    exp_return: Optional[float] = 14.0
+    sharpe: Optional[float] = 1.3
+    risk_reduction_pct: Optional[float] = 7.0
+    technical_signal: Optional[str] = "EMA 20 > EMA 50 Bullish Trend"
+
+class TickerSaveRequest(BaseModel):
+    tickers: List[TickerItem]
+
+class TickerSyncResponse(BaseModel):
+    status: str
+    total_tickers: int
+    synced_at: str
+    tickers: List[TickerItem]
