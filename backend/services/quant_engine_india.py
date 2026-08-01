@@ -3,6 +3,7 @@ import json
 import logging
 import numpy as np
 import pandas as pd
+import concurrent.futures
 from typing import List, Dict, Any, Tuple, Optional
 from scipy.cluster.hierarchy import linkage, leaves_list
 from scipy.spatial.distance import pdist, squareform
@@ -127,18 +128,25 @@ def fetch_current_prices(tickers: List[str]) -> Dict[str, float]:
     prices = {}
     try:
         import yfinance as yf
-        ticker_str = " ".join(tickers)
-        data = yf.Tickers(ticker_str)
-        for t in tickers:
+
+        # ⚡ Bolt Optimization: Use ThreadPoolExecutor for concurrent price fetching
+        # This significantly reduces latency when fetching multiple tickers
+        def fetch_single(t):
             try:
-                info = data.tickers[t].fast_info
+                ticker_obj = yf.Ticker(t)
+                info = ticker_obj.fast_info
                 p = getattr(info, 'last_price', None)
                 if p and not np.isnan(p) and p > 0:
-                    prices[t] = round(float(p), 2)
-                else:
-                    prices[t] = DEFAULT_PRICES.get(t, 500.0)
+                    return t, round(float(p), 2)
             except Exception:
-                prices[t] = DEFAULT_PRICES.get(t, 500.0)
+                pass
+            return t, DEFAULT_PRICES.get(t, 500.0)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            results = executor.map(fetch_single, tickers)
+            for t, p in results:
+                prices[t] = p
+
     except Exception as e:
         logger.warning(f"yfinance price fetch error: {e}. Utilizing fallback prices.")
         for t in tickers:
