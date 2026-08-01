@@ -41,11 +41,11 @@ def test_fetch_current_prices_known_and_unknown():
     assert prices["UNKNOWN_TICKER.NS"] == 500.0  # Fallback default price
 
 def test_fetch_current_prices_yfinance_exception_fallback(monkeypatch):
-    def mock_yf_tickers(*args, **kwargs):
+    def mock_yf_ticker(*args, **kwargs):
         raise Exception("yfinance API connectivity failure")
 
     import yfinance as yf
-    monkeypatch.setattr(yf, "Tickers", mock_yf_tickers)
+    monkeypatch.setattr(yf, "Ticker", mock_yf_ticker)
 
     tickers = ["RELIANCE.NS", "TCS.NS"]
     prices = fetch_current_prices(tickers)
