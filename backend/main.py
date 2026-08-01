@@ -15,12 +15,13 @@ from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
     RecommendationRequest, RecommendationResponse, StressTestRequest, StressTestResponse,
     BrokerExecuteRequest, BrokerExecuteResponse, TickerItem, TickerSaveRequest, TickerSyncResponse,
-    ProbableScenariosResponse, TargetSellingPointRequest, TargetSellingPointResponse
+    ProbableScenariosResponse, TargetSellingPointRequest, TargetSellingPointResponse, TickerHistoryResponse
 )
 from services.mcp_client import mcp_client
 from services.quant_engine_india import (
     calculate_portfolio_diagnostics, generate_recommendations, normalize_ticker,
-    get_all_tickers, save_ticker_dataset, sync_top_tickers_dataset, calculate_target_selling_points
+    get_all_tickers, save_ticker_dataset, sync_top_tickers_dataset, calculate_target_selling_points,
+    fetch_ticker_price_history
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -178,13 +179,34 @@ async def get_target_selling_point(req: TargetSellingPointRequest):
         result = calculate_target_selling_points(
             capital_inr=req.capital_inr,
             target_profit_inr=req.target_profit_inr,
-            holding_days_target=req.holding_days_target,
+            time_horizon_months=req.time_horizon_months,
             risk_profile=req.risk_profile,
             macro_data=macro_data
         )
         return result
     except Exception as e:
         logger.error(f"Error calculating target selling points: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/ticker-history", response_model=TickerHistoryResponse)
+async def get_ticker_history(
+    ticker: str = "RELIANCE.NS",
+    period: str = "6mo",
+    target_profit_pct: float = 5.0
+):
+    """
+    Fetch historical daily prices (OHLC) for a ticker and run scenario backtest simulation
+    evaluating historical target price hit dates and day velocities.
+    """
+    try:
+        res = fetch_ticker_price_history(
+            ticker=ticker,
+            period=period,
+            target_profit_pct=target_profit_pct
+        )
+        return res
+    except Exception as e:
+        logger.error(f"Error fetching ticker history: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/stress-test", response_model=StressTestResponse)

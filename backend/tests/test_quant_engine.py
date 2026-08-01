@@ -215,16 +215,18 @@ def test_calculate_target_selling_points():
     res = calculate_target_selling_points(
         capital_inr=100000.0,
         target_profit_inr=5000.0,
-        holding_days_target=30,
+        time_horizon_months=1.0,
         risk_profile="Moderate"
     )
 
     assert res["capital_inr"] == 100000.0
     assert res["target_profit_inr"] == 5000.0
+    assert res["time_horizon_months"] == 1.0
     assert res["target_return_pct"] == 5.0
     assert res["total_invested_inr"] > 0
     assert res["total_expected_profit_inr"] > 0
-    assert "days" in res["portfolio_probable_exit_window"]
+    assert res["strategy_regime_name"] == "SHORT_HORIZON_HIGH_VELOCITY_ALPHA"
+    assert "months" in res["portfolio_probable_exit_window"]
     assert len(res["recommendations"]) > 0
 
     for card in res["recommendations"]:
@@ -233,4 +235,41 @@ def test_calculate_target_selling_points():
         assert card["profit_per_share_inr"] > 0
         assert card["total_expected_profit_inr"] > 0
         assert card["estimated_holding_days"] > 0
+        assert card["estimated_holding_months"] > 0
+        assert len(card["target_difficulty_rating"]) > 0
         assert len(card["probable_exit_date"]) > 0
+
+def test_horizon_varying_stock_selection():
+    from services.quant_engine_india import calculate_target_selling_points
+
+    # 1 Month Horizon
+    res_1m = calculate_target_selling_points(capital_inr=100000.0, target_profit_inr=5000.0, time_horizon_months=1.0)
+    tickers_1m = [card["ticker"] for card in res_1m["recommendations"]]
+
+    # 24 Month Horizon
+    res_24m = calculate_target_selling_points(capital_inr=100000.0, target_profit_inr=5000.0, time_horizon_months=24.0)
+    tickers_24m = [card["ticker"] for card in res_24m["recommendations"]]
+
+    # Ensure that 1 Month and 24 Month horizons generate DIFFERENT stock picks and strategy regimes!
+    assert res_1m["strategy_regime_name"] != res_24m["strategy_regime_name"]
+    assert tickers_1m != tickers_24m
+
+def test_fetch_ticker_price_history():
+    from services.quant_engine_india import fetch_ticker_price_history
+
+    res = fetch_ticker_price_history(ticker="RELIANCE.NS", period="6mo", target_profit_pct=5.0)
+
+    assert res["ticker"] == "RELIANCE.NS"
+    assert res["period"] == "6mo"
+    assert res["current_price"] > 0
+    assert res["target_profit_pct"] == 5.0
+    assert res["target_selling_price"] > res["current_price"]
+    assert res["data_points_count"] > 0
+    assert len(res["history"]) > 0
+    assert len(res["historical_scenarios"]) > 0
+
+    for sc in res["historical_scenarios"]:
+        assert sc["entry_price"] > 0
+        assert sc["target_selling_price"] > sc["entry_price"]
+        assert sc["days_to_target"] >= 1
+        assert sc["target_status"] in ["TARGET_HIT", "IN_PROGRESS"]

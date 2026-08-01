@@ -6,6 +6,7 @@ import DiagnosticsPanel from './components/DiagnosticsPanel';
 import RecommendationPanel from './components/RecommendationPanel';
 import MacroSimulator from './components/MacroSimulator';
 import TickerManager from './components/TickerManager';
+import TargetProfitPredictor from './components/TargetProfitPredictor';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -153,13 +154,25 @@ export default function App() {
           📊 Investment Recommendations & Diagnostics
         </button>
         <button
+          onClick={() => setActiveMainTab('predictor')}
+          style={{
+            padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
+            background: activeMainTab === 'predictor' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+            border: activeMainTab === 'predictor' ? '1px solid #f59e0b' : '1px solid var(--border-color)',
+            color: activeMainTab === 'predictor' ? '#fbbf24' : 'var(--text-muted)'
+          }}
+        >
+          🎯 Target Profit, Selling Point & Price History
+        </button>
+        <button
           onClick={() => setActiveMainTab('simulator')}
           style={{
             padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
-            background: activeMainTab === 'simulator' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-            border: activeMainTab === 'simulator' ? '1px solid #f59e0b' : '1px solid var(--border-color)',
-            color: activeMainTab === 'simulator' ? '#fbbf24' : 'var(--text-muted)'
+            background: activeMainTab === 'simulator' ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+            border: activeMainTab === 'simulator' ? '1px solid #ec4899' : '1px solid var(--border-color)',
+            color: activeMainTab === 'simulator' ? '#f472b6' : 'var(--text-muted)'
           }}
         >
           ⚡ Geopolitical Macro Stress Simulator
@@ -199,6 +212,12 @@ export default function App() {
             <RecommendationPanel recommendationsData={recommendations} />
             <DiagnosticsPanel diagnostics={diagnostics} />
           </main>
+        </div>
+      )}
+
+      {activeMainTab === 'predictor' && (
+        <div style={{ width: '100%' }}>
+          <TargetProfitPredictor recommendationsData={recommendations} />
         </div>
       )}
 

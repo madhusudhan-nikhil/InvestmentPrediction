@@ -171,7 +171,7 @@ class TickerSyncResponse(BaseModel):
 class TargetSellingPointRequest(BaseModel):
     capital_inr: float = Field(100000.0, ge=1000.0)
     target_profit_inr: float = Field(5000.0, ge=100.0)
-    holding_days_target: int = Field(30, ge=1)
+    time_horizon_months: float = Field(1.0, ge=0.1, description="Time horizon in months e.g. 1.0, 3.0, 6.0, 12.0, 24.0")
     risk_profile: str = Field("Moderate", description="Conservative, Moderate, or Aggressive")
 
 class TargetSellingPointCard(BaseModel):
@@ -189,15 +189,50 @@ class TargetSellingPointCard(BaseModel):
     total_expected_profit_inr: float
     expected_gain_pct: float
     estimated_holding_days: int
+    estimated_holding_months: float
     probable_exit_date: str
+    target_difficulty_rating: str
     technical_momentum_signal: str
     macro_rationale: str
 
 class TargetSellingPointResponse(BaseModel):
     capital_inr: float
     target_profit_inr: float
+    time_horizon_months: float
     target_return_pct: float
     total_invested_inr: float
     total_expected_profit_inr: float
+    strategy_regime_name: str
     portfolio_probable_exit_window: str
     recommendations: List[TargetSellingPointCard]
+
+class HistoricalPricePoint(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: int
+
+class HistoricalScenarioSim(BaseModel):
+    scenario_name: str
+    period_description: str
+    entry_date: str
+    entry_price: float
+    target_selling_price: float
+    target_hit_date: Optional[str] = None
+    days_to_target: int
+    target_status: str  # "TARGET_HIT", "IN_PROGRESS", "EXPIRED"
+    max_price_reached: float
+    max_gain_pct: float
+
+class TickerHistoryResponse(BaseModel):
+    ticker: str
+    instrument_name: str
+    period: str
+    current_price: float
+    target_profit_pct: float
+    target_selling_price: float
+    data_points_count: int
+    history: List[HistoricalPricePoint]
+    historical_scenarios: List[HistoricalScenarioSim]
