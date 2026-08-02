@@ -2,8 +2,7 @@
 **Vulnerability:** The application was using an overly permissive CORS (Cross-Origin Resource Sharing) configuration in `backend/main.py`. The `allow_origins=["*"]` allows any website to make requests to this backend when `allow_credentials=True` is also set. Additionally, HTTP 500 error responses were returning stringified internal exception details, which leaks sensitive information.
 **Learning:** It's important to set specific origins for CORS when credentials are allowed, and to mask sensitive stack traces and internal errors in production APIs.
 **Prevention:** Always use specific origins for CORS instead of the wildcard character (*), especially when allowing credentials. Always fail securely with generic error messages.
-
-## 2024-08-01 - [MEDIUM] Fix DoS and Error Leakage in File Upload
-**Vulnerability:** Found a memory exhaustion Denial of Service (DoS) vulnerability where the `/api/parse-portfolio` endpoint read the entire uploaded file and JSON payloads into memory without size limits. Additionally, found that unhandled exceptions leaked raw error details (`str(e)`) to the client, potentially exposing internal stack traces or system information.
-**Learning:** Endpoints that accept file uploads or unbounded strings and read them entirely into memory (`await file.read()`) are vulnerable to memory exhaustion DoS attacks if the user uploads a massive file. Generic catch-all exception handlers that blindly return stringified exception details to the user introduce information disclosure risks.
-**Prevention:** Always enforce strict size limitations (e.g., `10MB` for files, `100KB` for strings) before parsing untrusted payloads. Explicitly handle and re-raise expected HTTP errors, and replace internal exception strings with generic, secure error messages ("Failed to parse uploaded file", "Invalid JSON payload format") before sending them to the client.
+## 2026-08-02 - [Error Leakage from Exception stringification]
+**Vulnerability:** HTTP 400 error responses were returning stringified internal exception details during file parsing and JSON loading in `backend/main.py`. This exposes internal execution flow, and specific errors to the client.
+**Learning:** Returning `str(e)` in an API error response exposes details that malicious users can exploit.
+**Prevention:** Mask specific errors behind a generic user-friendly string error message for failed validations.

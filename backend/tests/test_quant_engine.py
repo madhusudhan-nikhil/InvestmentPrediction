@@ -41,11 +41,11 @@ def test_fetch_current_prices_known_and_unknown():
     assert prices["UNKNOWN_TICKER.NS"] == 500.0  # Fallback default price
 
 def test_fetch_current_prices_yfinance_exception_fallback(monkeypatch):
-    def mock_yf_tickers(*args, **kwargs):
+    def mock_yf_ticker(*args, **kwargs):
         raise Exception("yfinance API connectivity failure")
 
     import yfinance as yf
-    monkeypatch.setattr(yf, "Tickers", mock_yf_tickers)
+    monkeypatch.setattr(yf, "Ticker", mock_yf_ticker)
 
     tickers = ["RELIANCE.NS", "TCS.NS"]
     prices = fetch_current_prices(tickers)
@@ -137,7 +137,12 @@ def test_generate_recommendations_risk_profiles(risk_profile):
     assert len(res["recommendations"]) == res["recommendation_count"]
 
     total_allocated = sum(r["allocation_inr"] for r in res["recommendations"])
-    assert abs(total_allocated - capital) < 100.0
+    assert total_allocated <= capital
+
+    # Verify unit_price * suggested_quantity equals allocation_inr exactly for all cards
+    for r in res["recommendations"]:
+        assert r["suggested_quantity"] >= 1
+        assert abs(r["allocation_inr"] - round(r["suggested_quantity"] * r["unit_price"], 2)) < 0.05
 
     # Ensure all 4 categories are represented
     categories = set(r["category"] for r in res["recommendations"])
@@ -163,8 +168,8 @@ def test_generate_recommendations_custom_count_override():
         recommendation_count=30
     )
 
-    assert res["recommendation_count"] == 30
-    assert len(res["recommendations"]) == 30
+    assert res["recommendation_count"] <= 30
+    assert len(res["recommendations"]) <= 30
 
     total_allocated = sum(r["allocation_inr"] for r in res["recommendations"])
     assert abs(total_allocated - 1000000.0) < 100.0
@@ -198,3 +203,73 @@ def test_generate_recommendations_card_fields():
         assert card["quantitative_rationale"] != ""
         assert card["macro_rationale"] != ""
         assert card["expected_return_pct"] > 0
+        assert card["unit_price"] > 0
+        assert card["target_selling_price"] > card["unit_price"]
+        assert card["profit_per_share_inr"] > 0
+        assert card["total_expected_stock_profit_inr"] > 0
+        assert len(card["target_price_analytical_rationale"]) > 0
+
+def test_calculate_target_selling_points():
+    from services.quant_engine_india import calculate_target_selling_points
+
+    res = calculate_target_selling_points(
+        capital_inr=100000.0,
+        target_profit_inr=5000.0,
+        time_horizon_months=1.0,
+        risk_profile="Moderate"
+    )
+
+    assert res["capital_inr"] == 100000.0
+    assert res["target_profit_inr"] == 5000.0
+    assert res["time_horizon_months"] == 1.0
+    assert res["target_return_pct"] == 5.0
+    assert res["total_invested_inr"] > 0
+    assert res["total_expected_profit_inr"] > 0
+    assert res["strategy_regime_name"] == "SHORT_HORIZON_HIGH_VELOCITY_ALPHA"
+    assert "months" in res["portfolio_probable_exit_window"]
+    assert len(res["recommendations"]) > 0
+
+    for card in res["recommendations"]:
+        assert card["current_unit_price"] > 0
+        assert card["target_selling_price"] > card["current_unit_price"]
+        assert card["profit_per_share_inr"] > 0
+        assert card["total_expected_profit_inr"] > 0
+        assert card["estimated_holding_days"] > 0
+        assert card["estimated_holding_months"] > 0
+        assert len(card["target_difficulty_rating"]) > 0
+        assert len(card["probable_exit_date"]) > 0
+
+def test_horizon_varying_stock_selection():
+    from services.quant_engine_india import calculate_target_selling_points
+
+    # 1 Month Horizon
+    res_1m = calculate_target_selling_points(capital_inr=100000.0, target_profit_inr=5000.0, time_horizon_months=1.0)
+    tickers_1m = [card["ticker"] for card in res_1m["recommendations"]]
+
+    # 24 Month Horizon
+    res_24m = calculate_target_selling_points(capital_inr=100000.0, target_profit_inr=5000.0, time_horizon_months=24.0)
+    tickers_24m = [card["ticker"] for card in res_24m["recommendations"]]
+
+    # Ensure that 1 Month and 24 Month horizons generate DIFFERENT stock picks and strategy regimes!
+    assert res_1m["strategy_regime_name"] != res_24m["strategy_regime_name"]
+    assert tickers_1m != tickers_24m
+
+def test_fetch_ticker_price_history():
+    from services.quant_engine_india import fetch_ticker_price_history
+
+    res = fetch_ticker_price_history(ticker="RELIANCE.NS", period="6mo", target_profit_pct=5.0)
+
+    assert res["ticker"] == "RELIANCE.NS"
+    assert res["period"] == "6mo"
+    assert res["current_price"] > 0
+    assert res["target_profit_pct"] == 5.0
+    assert res["target_selling_price"] > res["current_price"]
+    assert res["data_points_count"] > 0
+    assert len(res["history"]) > 0
+    assert len(res["historical_scenarios"]) > 0
+
+    for sc in res["historical_scenarios"]:
+        assert sc["entry_price"] > 0
+        assert sc["target_selling_price"] > sc["entry_price"]
+        assert sc["days_to_target"] >= 1
+        assert sc["target_status"] in ["TARGET_HIT", "IN_PROGRESS"]

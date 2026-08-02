@@ -6,6 +6,7 @@ import DiagnosticsPanel from './components/DiagnosticsPanel';
 import RecommendationPanel from './components/RecommendationPanel';
 import MacroSimulator from './components/MacroSimulator';
 import TickerManager from './components/TickerManager';
+import TargetProfitPredictor from './components/TargetProfitPredictor';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -135,85 +136,102 @@ export default function App() {
         onRefresh={fetchMacroPulse}
       />
 
-      {/* Main Grid Layout: Sidebar + Dashboard Panels */}
-      <div className="app-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px' }}>
-        {/* Left Sidebar */}
-        <Sidebar
-          availableCapital={availableCapital}
-          setAvailableCapital={setAvailableCapital}
-          riskProfile={riskProfile}
-          setRiskProfile={setRiskProfile}
-          onUploadCSV={handleUploadCSV}
-          onLoadSamplePortfolio={loadSamplePortfolio}
-          onGenerateFreshCapital={loadFreshCapitalRecommendations}
-          onRunOptimization={handleRunOptimization}
-          loading={loading}
-        />
-
-        {/* Right Content Area with Main Navigation Tabs */}
-        <main>
-          {/* Main Navigation Tabs */}
-          <div style={{
-            display: 'flex', gap: '12px', marginBottom: '20px',
-            borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', overflowX: 'auto'
-          }}>
-            <button
-              onClick={() => setActiveMainTab('dashboard')}
-              style={{
-                padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                background: activeMainTab === 'dashboard' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-                border: activeMainTab === 'dashboard' ? '1px solid #10b981' : '1px solid var(--border-color)',
-                color: activeMainTab === 'dashboard' ? '#34d399' : 'var(--text-muted)'
-              }}
-            >
-              📊 Investment Recommendations & Diagnostics
-            </button>
-            <button
-              onClick={() => setActiveMainTab('simulator')}
-              style={{
-                padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                background: activeMainTab === 'simulator' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-                border: activeMainTab === 'simulator' ? '1px solid #f59e0b' : '1px solid var(--border-color)',
-                color: activeMainTab === 'simulator' ? '#fbbf24' : 'var(--text-muted)'
-              }}
-            >
-              ⚡ Geopolitical Macro Stress Simulator
-            </button>
-            <button
-              onClick={() => setActiveMainTab('tickers')}
-              style={{
-                padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                background: activeMainTab === 'tickers' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-                border: activeMainTab === 'tickers' ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
-                color: activeMainTab === 'tickers' ? '#c084fc' : 'var(--text-muted)'
-              }}
-            >
-              ⚙️ Ticker Universe Manager
-            </button>
-          </div>
-
-          {activeMainTab === 'dashboard' && (
-            <>
-              {/* Actionable Recommendations Panel (Primary Decision View) */}
-              <RecommendationPanel recommendationsData={recommendations} />
-
-              {/* Portfolio Diagnostics Panel */}
-              <DiagnosticsPanel diagnostics={diagnostics} />
-            </>
-          )}
-
-          {activeMainTab === 'simulator' && (
-            <MacroSimulator holdings={holdings} API_BASE_URL={API_BASE_URL} />
-          )}
-
-          {activeMainTab === 'tickers' && (
-            <TickerManager />
-          )}
-        </main>
+      {/* Main Navigation Tabs Bar */}
+      <div style={{
+        display: 'flex', gap: '12px', marginTop: '16px', marginBottom: '24px',
+        borderBottom: '1px solid var(--border-color)', paddingBottom: '14px', overflowX: 'auto'
+      }}>
+        <button
+          onClick={() => setActiveMainTab('dashboard')}
+          style={{
+            padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
+            background: activeMainTab === 'dashboard' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+            border: activeMainTab === 'dashboard' ? '1px solid #10b981' : '1px solid var(--border-color)',
+            color: activeMainTab === 'dashboard' ? '#34d399' : 'var(--text-muted)'
+          }}
+        >
+          📊 Investment Recommendations & Diagnostics
+        </button>
+        <button
+          onClick={() => setActiveMainTab('predictor')}
+          style={{
+            padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
+            background: activeMainTab === 'predictor' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+            border: activeMainTab === 'predictor' ? '1px solid #f59e0b' : '1px solid var(--border-color)',
+            color: activeMainTab === 'predictor' ? '#fbbf24' : 'var(--text-muted)'
+          }}
+        >
+          🎯 Target Profit, Selling Point & Price History
+        </button>
+        <button
+          onClick={() => setActiveMainTab('simulator')}
+          style={{
+            padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
+            background: activeMainTab === 'simulator' ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+            border: activeMainTab === 'simulator' ? '1px solid #ec4899' : '1px solid var(--border-color)',
+            color: activeMainTab === 'simulator' ? '#f472b6' : 'var(--text-muted)'
+          }}
+        >
+          ⚡ Geopolitical Macro Stress Simulator
+        </button>
+        <button
+          onClick={() => setActiveMainTab('tickers')}
+          style={{
+            padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
+            background: activeMainTab === 'tickers' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+            border: activeMainTab === 'tickers' ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
+            color: activeMainTab === 'tickers' ? '#c084fc' : 'var(--text-muted)'
+          }}
+        >
+          ⚙️ Ticker Universe Manager
+        </button>
       </div>
+
+      {/* Conditional Layout Views */}
+      {activeMainTab === 'dashboard' && (
+        <div className="app-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px' }}>
+          {/* Left Sidebar */}
+          <Sidebar
+            availableCapital={availableCapital}
+            setAvailableCapital={setAvailableCapital}
+            riskProfile={riskProfile}
+            setRiskProfile={setRiskProfile}
+            onUploadCSV={handleUploadCSV}
+            onLoadSamplePortfolio={loadSamplePortfolio}
+            onGenerateFreshCapital={loadFreshCapitalRecommendations}
+            onRunOptimization={handleRunOptimization}
+            loading={loading}
+          />
+
+          {/* Right Dashboard Panels */}
+          <main style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <RecommendationPanel recommendationsData={recommendations} />
+            <DiagnosticsPanel diagnostics={diagnostics} />
+          </main>
+        </div>
+      )}
+
+      {activeMainTab === 'predictor' && (
+        <div style={{ width: '100%' }}>
+          <TargetProfitPredictor recommendationsData={recommendations} />
+        </div>
+      )}
+
+      {activeMainTab === 'simulator' && (
+        <div style={{ width: '100%' }}>
+          <MacroSimulator holdings={holdings} API_BASE_URL={API_BASE_URL} />
+        </div>
+      )}
+
+      {activeMainTab === 'tickers' && (
+        <div style={{ width: '100%' }}>
+          <TickerManager />
+        </div>
+      )}
     </div>
   );
 }
