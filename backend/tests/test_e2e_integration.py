@@ -92,7 +92,7 @@ def test_parse_portfolio_invalid_csv_no_ticker_column(test_client):
 def test_parse_portfolio_invalid_raw_json_string(test_client):
     response = test_client.post("/api/parse-portfolio", data={"raw_holdings": "{invalid_json_string}"})
     assert response.status_code == 400
-    assert "Invalid JSON string" in response.json()["detail"]
+    assert "Invalid JSON payload format." in response.json()["detail"]
 
 # ---------------------------------------------------------
 # Recommendations Endpoint Tests (/api/recommend-inr)

@@ -86,7 +86,11 @@ async def parse_portfolio(
 
     if file:
         try:
-            contents = await file.read()
+            contents = b""
+            while chunk := await file.read(1024 * 1024):
+                contents += chunk
+                if len(contents) > 10 * 1024 * 1024:
+                    raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
             filename = file.filename.lower()
             if filename.endswith(".csv"):
                 df = pd.read_csv(io.BytesIO(contents))
@@ -134,10 +138,14 @@ async def parse_portfolio(
                     "Quantity": max(0.01, q),
                     "Purchase Price": max(0.0, p)
                 })
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"File parsing error: {e}")
             raise HTTPException(status_code=400, detail="Failed to parse uploaded file.")
     elif raw_holdings:
+        if len(raw_holdings) > 100 * 1024:
+            raise HTTPException(status_code=413, detail="Payload too large. Maximum size is 100KB.")
         import json
         try:
             holdings_list = json.loads(raw_holdings)
