@@ -136,13 +136,14 @@ async def parse_portfolio(
                 })
         except Exception as e:
             logger.error(f"File parsing error: {e}")
-            raise HTTPException(status_code=400, detail=f"Failed to parse uploaded file: {str(e)}")
+            raise HTTPException(status_code=400, detail="Failed to parse uploaded file.")
     elif raw_holdings:
         import json
         try:
             holdings_list = json.loads(raw_holdings)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Invalid JSON string in raw_holdings: {str(e)}")
+            logger.error(f"JSON parsing error in raw_holdings: {e}")
+            raise HTTPException(status_code=400, detail="Invalid JSON string in raw_holdings.")
 
     macro_data = await mcp_client.get_macro_pulse()
     diagnostics = calculate_portfolio_diagnostics(holdings_list, macro_data.get("threat_score", 35.0))
