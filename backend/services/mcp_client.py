@@ -20,6 +20,13 @@ class WorldMonitorMCPClient:
 
     async def get_macro_pulse(self) -> Dict[str, Any]:
         """Fetch global geopolitical threat feeds + Indian macro overlay."""
+        # ⚡ Bolt Optimization: Cache expensive macro pulse data for 5 minutes
+        # to prevent redundant slow yfinance API network calls across multiple endpoints.
+        if self.cached_macro and self.last_fetched:
+            elapsed = (datetime.datetime.now() - self.last_fetched).total_seconds()
+            if elapsed < 300: # 5 minutes cache
+                return self.cached_macro
+
         # Try fetching real yfinance macro tickers if available or fall back to high-fidelity live state
         brent_price = 84.50
         brent_change = +2.4
@@ -101,7 +108,7 @@ class WorldMonitorMCPClient:
             {"factor": "Global & South Asia GDELT Score", "score": round(gdelt_threat, 1), "weight": "15%", "detail": f"GDELT Index {gdelt_tension}"}
         ]
 
-        return {
+        result = {
             "threat_score": total_threat_score,
             "active_regime": regime,
             "regime_description": regime_desc,
@@ -119,6 +126,11 @@ class WorldMonitorMCPClient:
             "threat_factors": threat_factors,
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
+
+        self.cached_macro = result
+        self.last_fetched = datetime.datetime.now()
+
+        return result
 
     async def get_probable_scenarios(self) -> Dict[str, Any]:
         """
