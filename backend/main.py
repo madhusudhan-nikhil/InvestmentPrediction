@@ -4,6 +4,7 @@ import sys
 # Ensure backend directory is in sys.path when running from workspace root
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import asyncio
 import io
 import logging
 from typing import List, Dict, Any, Optional
@@ -92,11 +93,20 @@ async def parse_portfolio(
                 if len(contents) > 10 * 1024 * 1024:
                     raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
             filename = file.filename.lower()
-            if filename.endswith(".csv"):
-                df = pd.read_csv(io.BytesIO(contents))
-            elif filename.endswith((".xls", ".xlsx")):
-                df = pd.read_excel(io.BytesIO(contents))
-            else:
+
+            def parse_dataframe(file_content: bytes, fname: str):
+                if fname.endswith(".csv"):
+                    return pd.read_csv(io.BytesIO(file_content))
+                elif fname.endswith((".xls", ".xlsx")):
+                    return pd.read_excel(io.BytesIO(file_content))
+                else:
+                    return None
+
+            # ⚡ Bolt Optimization: Offload blocking pandas parsing to separate thread
+            # so it does not block FastAPI's async event loop
+            df = await asyncio.to_thread(parse_dataframe, contents, filename)
+
+            if df is None:
                 raise HTTPException(status_code=400, detail="Unsupported file format. Please upload CSV or Excel.")
 
             # Standardize column names flexibly
