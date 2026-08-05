@@ -4,3 +4,6 @@
 ## 2026-08-02 - yfinance live data testing quirk
 **Learning:** Backend tests for recommendations can fail randomly due to a reliance on live `yfinance` data (e.g., delisted tickers causing exact count assertions to fail).
 **Action:** Prefer using flexible boundary assertions (e.g., `<= 30` instead of `== 30`) or ensure robust mocking to prevent test flakiness.
+## 2026-08-05 - FastAPI event loop blocking by pandas parsing
+**Learning:** Heavy synchronous operations like `pd.read_csv` and `pd.read_excel` block the main FastAPI async event loop, significantly degrading concurrent request performance.
+**Action:** Always wrap heavy synchronous data processing tasks (like pandas file parsing) in `await asyncio.to_thread(...)` when inside an `async def` endpoint to offload them to worker threads.

@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 
 # Ensure backend directory is in sys.path when running from workspace root
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -93,9 +94,11 @@ async def parse_portfolio(
                     raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
             filename = file.filename.lower()
             if filename.endswith(".csv"):
-                df = pd.read_csv(io.BytesIO(contents))
+                # ⚡ Bolt Optimization: Offload pandas CSV parsing to worker thread to avoid blocking event loop
+                df = await asyncio.to_thread(pd.read_csv, io.BytesIO(contents))
             elif filename.endswith((".xls", ".xlsx")):
-                df = pd.read_excel(io.BytesIO(contents))
+                # ⚡ Bolt Optimization: Offload pandas Excel parsing to worker thread to avoid blocking event loop
+                df = await asyncio.to_thread(pd.read_excel, io.BytesIO(contents))
             else:
                 raise HTTPException(status_code=400, detail="Unsupported file format. Please upload CSV or Excel.")
 
