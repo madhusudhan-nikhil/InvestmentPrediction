@@ -80,19 +80,19 @@ def test_parse_portfolio_unsupported_file(test_client):
     files = {"file": ("document.pdf", b"%PDF-1.4 dummy pdf content", "application/pdf")}
     response = test_client.post("/api/parse-portfolio", files=files)
     assert response.status_code == 400
-    assert response.json()["detail"] == "Failed to parse uploaded file."
+    assert response.json()["detail"] == "Unsupported file format. Please upload CSV or Excel."
 
 def test_parse_portfolio_invalid_csv_no_ticker_column(test_client):
     bad_csv_bytes = b"Amount,Value,Price\n100,500,50\n"
     files = {"file": ("bad_portfolio.csv", bad_csv_bytes, "text/csv")}
     response = test_client.post("/api/parse-portfolio", files=files)
     assert response.status_code == 400
-    assert response.json()["detail"] == "Failed to parse uploaded file."
+    assert response.json()["detail"] == "CSV/Excel must contain a 'Ticker' or 'Symbol' column."
 
 def test_parse_portfolio_invalid_raw_json_string(test_client):
     response = test_client.post("/api/parse-portfolio", data={"raw_holdings": "{invalid_json_string}"})
     assert response.status_code == 400
-    assert "Invalid JSON payload format." in response.json()["detail"]
+    assert "Invalid JSON string in raw_holdings." in response.json()["detail"]
 
 # ---------------------------------------------------------
 # Recommendations Endpoint Tests (/api/recommend-inr)
