@@ -5,7 +5,6 @@ import Sidebar from './components/Sidebar';
 import DiagnosticsPanel from './components/DiagnosticsPanel';
 import RecommendationPanel from './components/RecommendationPanel';
 import MacroSimulator from './components/MacroSimulator';
-import TickerManager from './components/TickerManager';
 import TargetProfitPredictor from './components/TargetProfitPredictor';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -17,14 +16,16 @@ export default function App() {
 
   const [availableCapital, setAvailableCapital] = useState(500000); // Default ₹5 Lakhs
   const [riskProfile, setRiskProfile] = useState("Moderate");
+  const [assetTypePreference, setAssetTypePreference] = useState("EQUITY_FOCUSED"); // Default Equity-Focused
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeMainTab, setActiveMainTab] = useState("dashboard"); // 'dashboard', 'simulator', or 'tickers'
+  const [syncingTickers, setSyncingTickers] = useState(false);
+  const [activeMainTab, setActiveMainTab] = useState("dashboard"); // 'dashboard', 'predictor', or 'simulator'
 
   // Initial load: fetch macro pulse and generate recommendations directly
   useEffect(() => {
     fetchMacroPulse();
-    fetchRecommendations(500000, "Moderate", []);
+    fetchRecommendations(500000, "Moderate", [], "EQUITY_FOCUSED");
   }, []);
 
   const fetchMacroPulse = async () => {
@@ -60,13 +61,13 @@ export default function App() {
     ];
     setHoldings(sample);
     await parseHoldingsList(sample);
-    await fetchRecommendations(availableCapital, riskProfile, sample);
+    await fetchRecommendations(availableCapital, riskProfile, sample, assetTypePreference);
   };
 
   const loadFreshCapitalRecommendations = async () => {
     setHoldings([]);
     setDiagnostics(null);
-    await fetchRecommendations(availableCapital, riskProfile, []);
+    await fetchRecommendations(availableCapital, riskProfile, [], assetTypePreference);
   };
 
   const parseHoldingsList = async (holdingsList) => {
@@ -99,7 +100,7 @@ export default function App() {
       }));
       setHoldings(parsedHoldings);
 
-      await fetchRecommendations(availableCapital, riskProfile, parsedHoldings);
+      await fetchRecommendations(availableCapital, riskProfile, parsedHoldings, assetTypePreference);
     } catch (e) {
       alert(e.response?.data?.detail || "Failed to parse portfolio file");
     } finally {
@@ -107,12 +108,13 @@ export default function App() {
     }
   };
 
-  const fetchRecommendations = async (capital, risk, currentHoldings = holdings) => {
+  const fetchRecommendations = async (capital, risk, currentHoldings = holdings, assetPref = assetTypePreference) => {
     setLoading(true);
     try {
       const res = await axios.post(`${API_BASE_URL}/api/recommend-inr`, {
         available_capital_inr: capital,
         risk_profile: risk,
+        asset_type_preference: assetPref,
         holdings: currentHoldings
       });
       setRecommendations(res.data);
@@ -124,7 +126,18 @@ export default function App() {
   };
 
   const handleRunOptimization = () => {
-    fetchRecommendations(availableCapital, riskProfile, holdings);
+    fetchRecommendations(availableCapital, riskProfile, holdings, assetTypePreference);
+  };
+
+  const handleSyncTickers = async () => {
+    setSyncingTickers(true);
+    try {
+      await axios.post(`${API_BASE_URL}/api/tickers/sync`);
+    } catch (e) {
+      console.error("Error syncing tickers:", e);
+    } finally {
+      setSyncingTickers(false);
+    }
   };
 
   return (
@@ -134,6 +147,8 @@ export default function App() {
         macroData={macroPulse}
         loading={loading}
         onRefresh={fetchMacroPulse}
+        onSyncTickers={handleSyncTickers}
+        syncingTickers={syncingTickers}
       />
 
       {/* Main Navigation Tabs Bar */}
@@ -151,7 +166,7 @@ export default function App() {
             color: activeMainTab === 'dashboard' ? '#34d399' : 'var(--text-muted)'
           }}
         >
-          📊 Investment Recommendations & Diagnostics
+          📊 Portfolio Diagnostic & Optimization Dashboard
         </button>
         <button
           onClick={() => setActiveMainTab('predictor')}
@@ -163,43 +178,34 @@ export default function App() {
             color: activeMainTab === 'predictor' ? '#fbbf24' : 'var(--text-muted)'
           }}
         >
-          🎯 Target Profit, Selling Point & Price History
+          🎯 Target Profit & Sell Date Predictor
         </button>
         <button
           onClick={() => setActiveMainTab('simulator')}
           style={{
             padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
-            background: activeMainTab === 'simulator' ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-            border: activeMainTab === 'simulator' ? '1px solid #ec4899' : '1px solid var(--border-color)',
-            color: activeMainTab === 'simulator' ? '#f472b6' : 'var(--text-muted)'
+            background: activeMainTab === 'simulator' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+            border: activeMainTab === 'simulator' ? '1px solid #3b82f6' : '1px solid var(--border-color)',
+            color: activeMainTab === 'simulator' ? '#60a5fa' : 'var(--text-muted)'
           }}
         >
-          ⚡ Geopolitical Macro Stress Simulator
+          🌐 World Monitor Macro Simulator
         </button>
-        <button
-          onClick={() => setActiveMainTab('tickers')}
-          style={{
-            padding: '10px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', whiteSpace: 'nowrap',
-            background: activeMainTab === 'tickers' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-            border: activeMainTab === 'tickers' ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
-            color: activeMainTab === 'tickers' ? '#c084fc' : 'var(--text-muted)'
-          }}
-        >
-          ⚙️ Ticker Universe Manager
-        </button>
+
       </div>
 
       {/* Conditional Layout Views */}
       {activeMainTab === 'dashboard' && (
-        <div className="app-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px' }}>
+        <div className="app-main-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', alignItems: 'start' }}>
           {/* Left Sidebar */}
           <Sidebar
             availableCapital={availableCapital}
             setAvailableCapital={setAvailableCapital}
             riskProfile={riskProfile}
             setRiskProfile={setRiskProfile}
+            assetTypePreference={assetTypePreference}
+            setAssetTypePreference={setAssetTypePreference}
             onUploadCSV={handleUploadCSV}
             onLoadSamplePortfolio={loadSamplePortfolio}
             onGenerateFreshCapital={loadFreshCapitalRecommendations}
@@ -227,11 +233,7 @@ export default function App() {
         </div>
       )}
 
-      {activeMainTab === 'tickers' && (
-        <div style={{ width: '100%' }}>
-          <TickerManager />
-        </div>
-      )}
+
     </div>
   );
 }

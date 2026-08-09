@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Upload, IndianRupee, ShieldCheck, Zap, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
+import { Upload, IndianRupee, ShieldCheck, Zap, FileSpreadsheet, CheckCircle2, TrendingUp } from 'lucide-react';
 
 export default function Sidebar({
   availableCapital, setAvailableCapital,
   riskProfile, setRiskProfile,
+  assetTypePreference, setAssetTypePreference,
   onUploadCSV, onLoadSamplePortfolio,
   onRunOptimization, loading
 }) {
@@ -31,7 +32,8 @@ export default function Sidebar({
   return (
     <aside className="glass-panel" style={{
       padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px',
-      alignSelf: 'start', position: 'sticky', top: '24px', height: 'fit-content'
+      alignSelf: 'start', position: 'sticky', top: '24px',
+      maxHeight: 'calc(100vh - 48px)', overflowY: 'auto'
     }}>
       <div>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -128,14 +130,14 @@ export default function Sidebar({
       <div>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShieldCheck size={18} color="#a855f7" />
-          3. Risk & Objective Profile
+          3. Risk Profile
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
           {[
-            { id: 'Conservative', title: 'Conservative', desc: 'Capital Protection, Gold & Fixed Income focus' },
-            { id: 'Moderate', title: 'Moderate', desc: 'Balanced Nifty 50, Midcap & Gold allocation' },
-            { id: 'Aggressive', title: 'Aggressive', desc: 'Factor Momentum & Smallcaps Alpha focus' }
+            { id: 'Conservative', title: 'Conservative', desc: 'Capital Protection focus' },
+            { id: 'Moderate', title: 'Moderate', desc: 'Balanced growth focus' },
+            { id: 'Aggressive', title: 'Aggressive', desc: 'Factor Momentum & High Alpha' }
           ].map((profile) => (
             <div
               key={profile.id}
@@ -152,6 +154,43 @@ export default function Sidebar({
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                 {profile.desc}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <hr style={{ borderColor: 'var(--border-color)' }} />
+
+      {/* Asset Class Preference Selection */}
+      <div>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <TrendingUp size={18} color="#3b82f6" />
+          4. Asset Class Focus
+        </h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+          {[
+            { id: 'EQUITY_FOCUSED', title: '🚀 Direct Equity / Stocks', desc: 'Stock-heavy allocation (~90%+ direct stocks)' },
+            { id: 'EQUITY_ONLY', title: '💎 100% Direct Equities Only', desc: 'Pure direct stocks (zero Mutual Funds / ETFs)' },
+            { id: 'BALANCED', title: '⚖️ Balanced Mix', desc: 'Equities + ETFs & Mutual Funds' },
+            { id: 'MUTUAL_FUNDS_ETFS', title: '🛡️ Mutual Funds & ETFs', desc: 'Fund & Index heavy allocation' }
+          ].map((assetPref) => (
+            <div
+              key={assetPref.id}
+              onClick={() => setAssetTypePreference && setAssetTypePreference(assetPref.id)}
+              style={{
+                padding: '10px 14px', borderRadius: '10px', cursor: 'pointer',
+                background: assetTypePreference === assetPref.id ? 'rgba(59, 130, 246, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                border: assetTypePreference === assetPref.id ? '1px solid #3b82f6' : '1px solid var(--border-color)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ fontSize: '13px', fontWeight: '700', color: assetTypePreference === assetPref.id ? '#60a5fa' : '#f3f4f6' }}>
+                {assetPref.title}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {assetPref.desc}
               </div>
             </div>
           ))}

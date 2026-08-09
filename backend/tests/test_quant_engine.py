@@ -273,3 +273,64 @@ def test_fetch_ticker_price_history():
         assert sc["target_selling_price"] > sc["entry_price"]
         assert sc["days_to_target"] >= 1
         assert sc["target_status"] in ["TARGET_HIT", "IN_PROGRESS"]
+
+def test_asset_type_preference_equity_focused():
+    recs = generate_recommendations(
+        available_capital_inr=500000.0,
+        risk_profile="Moderate",
+        asset_type_preference="EQUITY_FOCUSED"
+    )
+    items = recs["recommendations"]
+    equity_items = [r for r in items if r["asset_type"] == "EQUITY"]
+    assert len(equity_items) >= len(items) * 0.8  # At least 80%+ direct equity stocks
+
+def test_asset_type_preference_equity_only():
+    recs = generate_recommendations(
+        available_capital_inr=500000.0,
+        risk_profile="Moderate",
+        asset_type_preference="EQUITY_ONLY"
+    )
+    items = recs["recommendations"]
+    assert all(r["asset_type"] == "EQUITY" for r in items)  # 100% direct equity stocks
+
+def test_user_holdings_integration_rebalance():
+    sample = [
+        {"Ticker": "RELIANCE", "Quantity": 25, "Purchase Price": 2850},
+        {"Ticker": "TCS", "Quantity": 15, "Purchase Price": 3900}
+    ]
+    recs = generate_recommendations(
+        available_capital_inr=500000.0,
+        risk_profile="Moderate",
+        existing_holdings=sample,
+        asset_type_preference="EQUITY_FOCUSED"
+    )
+    items = recs["recommendations"]
+    rebalanced_tickers = [r["ticker"] for r in items if r["category"] == "Category A"]
+    assert any("RELIANCE" in t or "TCS" in t for t in rebalanced_tickers)
+
+def test_actionable_rebalancing_with_sell_cash_delta():
+    # User portfolio with 1 underperforming stock (IGL) and 1 strong stock (BEL)
+    holdings = [
+        {"Ticker": "IGL", "Quantity": 414, "Purchase Price": 212.58},  # Heavy loss (~-28%) -> should be SELL
+        {"Ticker": "BEL", "Quantity": 697, "Purchase Price": 134.83}   # Massive gain (+197%) -> should be KEEP / TOP_UP
+    ]
+    res = generate_recommendations(
+        available_capital_inr=1000000.0,
+        risk_profile="Moderate",
+        existing_holdings=holdings,
+        asset_type_preference="EQUITY_FOCUSED"
+    )
+
+    assert "fresh_capital_inr" in res
+    assert "cash_generated_from_sales_inr" in res
+    assert "total_rebalancing_capital_inr" in res
+    assert "action_counts" in res
+
+    # Verify SELL action generated for underperforming stock
+    sell_items = [r for r in res["recommendations"] if r["action_type"] == "SELL"]
+    assert len(sell_items) >= 1
+    assert any("IGL" in s["ticker"] for s in sell_items)
+    assert res["cash_generated_from_sales_inr"] > 0
+    assert res["total_rebalancing_capital_inr"] == res["fresh_capital_inr"] + res["cash_generated_from_sales_inr"]
+
+

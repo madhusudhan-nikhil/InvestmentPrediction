@@ -110,21 +110,25 @@ async def parse_portfolio(
                 raise HTTPException(status_code=400, detail="Unsupported file format. Please upload CSV or Excel.")
 
             # Standardize column names flexibly
-            cols_lower = {str(c).strip().lower(): c for c in df.columns}
+            cols_lower = {}
+            for c in df.columns:
+                c_clean = str(c).strip().lower().replace(".", "")
+                cols_lower[c_clean] = c
+                cols_lower[str(c).strip().lower()] = c
+
             ticker_col = (
-                cols_lower.get("ticker") or cols_lower.get("symbol") or
+                cols_lower.get("instrument") or cols_lower.get("ticker") or cols_lower.get("symbol") or
                 cols_lower.get("stock") or cols_lower.get("ticker symbol") or
-                cols_lower.get("instrument") or cols_lower.get("asset") or
-                cols_lower.get("name") or cols_lower.get("company")
+                cols_lower.get("asset") or cols_lower.get("name") or cols_lower.get("company")
             )
             qty_col = (
-                cols_lower.get("quantity") or cols_lower.get("qty") or
+                cols_lower.get("qty") or cols_lower.get("quantity") or
                 cols_lower.get("shares") or cols_lower.get("units") or cols_lower.get("volume")
             )
             price_col = (
-                cols_lower.get("purchase price") or cols_lower.get("price") or
-                cols_lower.get("buy price") or cols_lower.get("cost") or
-                cols_lower.get("avg price") or cols_lower.get("purchase_price")
+                cols_lower.get("avg cost") or cols_lower.get("purchase price") or cols_lower.get("price") or
+                cols_lower.get("buy price") or cols_lower.get("cost") or cols_lower.get("avg price") or
+                cols_lower.get("purchase_price") or cols_lower.get("ltp")
             )
 
             if not ticker_col:
@@ -179,7 +183,8 @@ async def get_recommendations(req: RecommendationRequest):
             risk_profile=req.risk_profile,
             existing_holdings=req.holdings,
             macro_data=macro_data,
-            recommendation_count=req.count
+            recommendation_count=req.count,
+            asset_type_preference=req.asset_type_preference
         )
         return recs
     except Exception as e:

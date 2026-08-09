@@ -1,7 +1,7 @@
 import React from 'react';
-import { Activity, ShieldAlert, TrendingDown, TrendingUp, RefreshCw, Flame, Globe } from 'lucide-react';
+import { Activity, ShieldAlert, TrendingDown, TrendingUp, RefreshCw, Flame, Globe, Database } from 'lucide-react';
 
-export default function TopBar({ macroData, loading, onRefresh }) {
+export default function TopBar({ macroData, loading, onRefresh, onSyncTickers, syncingTickers }) {
   if (!macroData) return null;
 
   const getThreatColor = (score) => {
@@ -74,6 +74,20 @@ export default function TopBar({ macroData, loading, onRefresh }) {
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Sync Pulse
+          </button>
+
+          <button
+            onClick={onSyncTickers}
+            disabled={syncingTickers}
+            style={{
+              background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.3)',
+              color: '#c084fc', padding: '10px 14px', borderRadius: '10px',
+              cursor: syncingTickers ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+              fontSize: '13px', fontWeight: '500', transition: 'all 0.2s'
+            }}
+          >
+            <Database size={14} className={syncingTickers ? "animate-spin" : ""} />
+            {syncingTickers ? 'Syncing...' : 'Sync Tickers'}
           </button>
         </div>
       </div>

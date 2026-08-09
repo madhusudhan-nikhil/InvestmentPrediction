@@ -106,6 +106,8 @@ def generate_benchmark_universe() -> List[Dict[str, Any]]:
         t_nse = f"{sym}.NS"
         t_bse = f"{sym}.BO"
 
+        asset_type = "MUTUAL_FUND_ETF" if any(k in sym.upper() or k in name.upper() for k in ["BEES", "ETF", "BOND", "INDEX", "MUTUAL", "FUND"]) else "EQUITY"
+
         if t_nse not in seen_tickers:
             seen_tickers.add(t_nse)
             ticker_list.append({
@@ -116,6 +118,7 @@ def generate_benchmark_universe() -> List[Dict[str, Any]]:
                 "category": cat,
                 "category_name": cat_name,
                 "badge": badge,
+                "asset_type": asset_type,
                 "base_weight": w,
                 "exp_return": ret,
                 "sharpe": sharpe,
@@ -133,6 +136,7 @@ def generate_benchmark_universe() -> List[Dict[str, Any]]:
                 "category": cat,
                 "category_name": cat_name,
                 "badge": badge,
+                "asset_type": asset_type,
                 "base_weight": w,
                 "exp_return": ret,
                 "sharpe": sharpe,

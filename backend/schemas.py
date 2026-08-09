@@ -56,6 +56,7 @@ class RecommendationRequest(BaseModel):
     holdings: Optional[List[Dict[str, Any]]] = []
     available_capital_inr: float = Field(100000.0, ge=1000)
     risk_profile: str = Field("Moderate", description="Conservative, Moderate, or Aggressive")
+    asset_type_preference: str = Field("EQUITY_FOCUSED", description="EQUITY_FOCUSED, EQUITY_ONLY, BALANCED, or MUTUAL_FUNDS_ETFS")
     count: Optional[int] = Field(None, description="Optional override recommendation count")
 
 class RecommendationCard(BaseModel):
@@ -65,6 +66,13 @@ class RecommendationCard(BaseModel):
     category: str  # Category A, B, C, D
     category_name: str
     category_badge_color: str
+    asset_type: str = "EQUITY"  # EQUITY or MUTUAL_FUND_ETF
+    action_type: str = "BUY"    # SELL, KEEP, TOP_UP, or BUY
+    action_label: str = "🚀 BUY"
+    current_holding_qty: float = 0.0
+    current_holding_value_inr: float = 0.0
+    freed_cash_inr: float = 0.0
+    action_summary: str = ""
     unit_price: float = 0.0
     target_selling_price: float = 0.0
     profit_per_share_inr: float = 0.0
@@ -82,12 +90,16 @@ class RecommendationCard(BaseModel):
 
 class RecommendationResponse(BaseModel):
     total_capital_inr: float
+    fresh_capital_inr: float = 0.0
+    cash_generated_from_sales_inr: float = 0.0
+    total_rebalancing_capital_inr: float = 0.0
     risk_profile: str
     recommendation_count: int
     recommendations: List[RecommendationCard]
     portfolio_health_before: float
     portfolio_health_after: float
     category_summary: Dict[str, float]
+    action_counts: Dict[str, int] = {}
     optimization_method: str = "Hierarchical Risk Parity (HRP) + Black-Litterman World Monitor Macro Tilt"
 
 class ProbableScenario(BaseModel):

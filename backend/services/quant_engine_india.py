@@ -33,12 +33,22 @@ def load_ticker_dataset():
                     technical_signals[t] = item.get("technical_signal", "EMA 20 > EMA 50 Bullish Trend")
 
                     if t.endswith(".NS"):
+                        asset_type = item.get("asset_type")
+                        if not asset_type:
+                            name_upper = item["name"].upper()
+                            t_upper = t.upper()
+                            if any(k in t_upper or k in name_upper for k in ["BEES", "ETF", "BOND", "INDEX", "MUTUAL", "FUND"]):
+                                asset_type = "MUTUAL_FUND_ETF"
+                            else:
+                                asset_type = "EQUITY"
+
                         candidate_universe.append({
                             "ticker": t,
                             "name": item["name"],
                             "category": item["category"],
                             "cat_name": item.get("cat_name") or item.get("category_name", "Rebalance"),
                             "badge": item.get("badge", "emerald"),
+                            "asset_type": asset_type,
                             "base_weight": float(item.get("base_weight", 0.02)),
                             "exp_return": float(item.get("exp_return", 14.0)),
                             "sharpe": float(item.get("sharpe", 1.3)),
@@ -369,7 +379,8 @@ def generate_recommendations(
     existing_holdings: List[Dict[str, Any]] = None,
     macro_data: Dict[str, Any] = None,
     recommendation_count: Optional[int] = None,
-    time_horizon_months: float = 1.0
+    time_horizon_months: float = 1.0,
+    asset_type_preference: str = "EQUITY_FOCUSED"
 ) -> Dict[str, Any]:
     """
     Generate actionable investment recommendations across 4 categories loaded from JSON dataset:
@@ -377,6 +388,9 @@ def generate_recommendations(
     Category B: Uncorrelated Diversifiers
     Category C: Systematic Alpha
     Category D: Macro & Geopolitical Hedges
+
+    Evaluates user uploaded holdings for SELL / KEEP / TOP-UP recommendations and
+    calculates total deployable capital (Available Capital + Cash Freed from Sales).
     """
     if existing_holdings is None:
         existing_holdings = []
@@ -392,6 +406,75 @@ def generate_recommendations(
     threat_score = macro_data.get("threat_score", 35.0)
     active_regime = macro_data.get("active_regime", "BULLISH_DOMESTIC_GROWTH")
 
+    # 1. Analyze existing holdings for SELL / KEEP / TOP-UP classification & Freed Cash
+    held_tickers_map = {}
+    held_sectors_weight = {}
+    sell_holdings = []
+    cash_generated_from_sales_inr = 0.0
+
+    if existing_holdings:
+        held_diag = calculate_portfolio_diagnostics(existing_holdings, threat_score)
+        held_items = held_diag.get("holdings_normalized", [])
+        held_sectors_weight = held_diag.get("sector_breakdown", {})
+
+        for h in held_items:
+            t = h["ticker"]
+            raw_t = h["raw_ticker"]
+            qty = float(h["quantity"])
+            bp = float(h["purchase_price"])
+            cp = float(h["current_price"])
+            val = float(h["current_value_inr"])
+            pnl_pct = float(h["unrealized_pnl_pct"])
+            sec = h["sector"]
+            sec_wt = held_sectors_weight.get(sec, 0.0)
+
+            # Actionable SELL decision rules:
+            # - Unrealized PnL % <= -7.5% (underperforming holding)
+            # - OR Sector concentration > 25% with weak return (< 2.0%)
+            # - OR PnL % < -4.0% in heavy sector (>20%)
+            is_sell = False
+            sell_reason = ""
+
+            if pnl_pct <= -7.5:
+                is_sell = True
+                sell_reason = f"Unrealized loss of {pnl_pct}% exceeds risk tolerance threshold."
+            elif sec_wt > 25.0 and pnl_pct < 2.0:
+                is_sell = True
+                sell_reason = f"Sector [{sec}] overconcentrated ({sec_wt}%) with weak returns ({pnl_pct}%)."
+            elif pnl_pct <= -4.0 and sec_wt > 20.0:
+                is_sell = True
+                sell_reason = f"Underperforming stock in heavy sector [{sec}]."
+
+            if is_sell:
+                freed_cash = val
+                cash_generated_from_sales_inr += freed_cash
+                sell_holdings.append({
+                    "ticker": t,
+                    "raw_ticker": raw_t,
+                    "instrument_name": get_ticker_display_name(t),
+                    "qty": qty,
+                    "purchase_price": bp,
+                    "current_price": cp,
+                    "current_value": val,
+                    "freed_cash": freed_cash,
+                    "pnl_pct": pnl_pct,
+                    "reason": sell_reason,
+                    "sector": sec
+                })
+            else:
+                held_tickers_map[t] = {
+                    "qty": qty,
+                    "purchase_price": bp,
+                    "current_price": cp,
+                    "current_value": val,
+                    "pnl_pct": pnl_pct,
+                    "sector": sec,
+                    "raw_ticker": raw_t
+                }
+
+    fresh_capital_inr = available_capital_inr
+    total_rebalancing_capital_inr = fresh_capital_inr + cash_generated_from_sales_inr
+
     # Use dynamically loaded candidate universe from JSON file
     candidates = list(CANDIDATE_UNIVERSE)
 
@@ -405,13 +488,10 @@ def generate_recommendations(
 
     # Adjust weights based on Time Horizon (Months)
     if time_horizon_months <= 2.0:
-        # Short Horizon (1-2 Months): High-Velocity Alpha & High Beta focus
         horizon_tilt = {"Category C": 2.2, "Category A": 0.8, "Category B": 0.5, "Category D": 0.3}
     elif time_horizon_months <= 6.0:
-        # Medium Horizon (3-6 Months): Balanced Growth
         horizon_tilt = {"Category C": 1.3, "Category A": 1.3, "Category B": 1.0, "Category D": 0.7}
     else:
-        # Long Horizon (12-24+ Months): Compounders & Sovereign/Gold Safe Havens
         horizon_tilt = {"Category A": 1.6, "Category B": 1.5, "Category C": 0.6, "Category D": 1.2}
 
     for cat in multiplier_map:
@@ -423,38 +503,69 @@ def generate_recommendations(
         multiplier_map["Category B"] *= 1.3
         multiplier_map["Category C"] *= 0.7
 
-    # Score candidates based on Black-Litterman HRP risk-adjusted return & macro threat alignment
+    # Exclude SELL tickers from candidate selection so we don't re-buy sold stocks
+    sell_tickers_set = set(s["ticker"] for s in sell_holdings)
+
     scored_candidates = []
     for c in candidates:
+        if c["ticker"] in sell_tickers_set:
+            continue
+
         cat = c["category"]
+        c_asset = c.get("asset_type", "EQUITY")
+
         m = multiplier_map.get(cat, 1.0)
-        score = c["base_weight"] * m * c["sharpe"] * (1.0 + c["risk_red"] / 100.0)
+
+        # Asset Type Preference Multiplier
+        if asset_type_preference == "EQUITY_FOCUSED":
+            asset_multiplier = 4.5 if c_asset == "EQUITY" else 0.25
+        elif asset_type_preference == "EQUITY_ONLY":
+            asset_multiplier = 5.0 if c_asset == "EQUITY" else 0.0
+        elif asset_type_preference == "MUTUAL_FUNDS_ETFS":
+            asset_multiplier = 3.5 if c_asset == "MUTUAL_FUND_ETF" else 0.4
+        else: # BALANCED
+            asset_multiplier = 1.0
+
+        if asset_multiplier <= 0.0:
+            continue
+
+        # Holdings Boost for Kept Holdings (Top-Up Candidates)
+        holdings_boost = 1.0
+        if c["ticker"] in held_tickers_map:
+            if cat == "Category A":
+                holdings_boost = 1.8
+            else:
+                holdings_boost = 1.35
+
+        sec = SECTOR_MAPPING.get(c["ticker"], "Other")
+        sec_weight = held_sectors_weight.get(sec, 0.0)
+        if sec_weight > 25.0:
+            sector_penalty_mult = max(0.4, 1.0 - (sec_weight - 25.0) * 0.02)
+        else:
+            sector_penalty_mult = 1.15
+
+        score = c["base_weight"] * m * asset_multiplier * holdings_boost * sector_penalty_mult * c["sharpe"] * (1.0 + c["risk_red"] / 100.0)
         c_copy = dict(c)
         c_copy["opt_score"] = score
         scored_candidates.append(c_copy)
 
-    # Sort candidates by composite optimization score descending
     scored_candidates.sort(key=lambda x: x["opt_score"], reverse=True)
 
-    # Select best available options dynamically (or use explicit override if passed)
-    # Determine dynamic optimal recommendation count based on deployment capital
     if recommendation_count and recommendation_count > 0:
         target_count = min(len(scored_candidates), recommendation_count)
     else:
-        # Scale portfolio size dynamically: 6 positions for ₹50K up to 25 positions for ₹25 Lakhs+
-        if available_capital_inr <= 50000:
+        if total_rebalancing_capital_inr <= 50000:
             target_count = 6
-        elif available_capital_inr <= 100000:
+        elif total_rebalancing_capital_inr <= 100000:
             target_count = 10
-        elif available_capital_inr <= 500000:
+        elif total_rebalancing_capital_inr <= 500000:
             target_count = 14
-        elif available_capital_inr <= 2500000:
+        elif total_rebalancing_capital_inr <= 2500000:
             target_count = 18
         else:
             target_count = 24
         target_count = min(len(scored_candidates), target_count)
 
-    # Dynamic selection: ensure top representation across all 4 categories, then fill top optimal options
     category_groups = {}
     for c in scored_candidates:
         cat = c["category"]
@@ -463,7 +574,6 @@ def generate_recommendations(
     selected = []
     selected_tickers = set()
 
-    # Guarantee top options from each of the 4 categories
     min_per_cat = max(1, target_count // 4)
     for cat in ["Category A", "Category B", "Category C", "Category D"]:
         for item in category_groups.get(cat, [])[:min_per_cat]:
@@ -471,7 +581,6 @@ def generate_recommendations(
                 selected.append(item)
                 selected_tickers.add(item["ticker"])
 
-    # Fill remaining slots with highest overall scored candidates up to target_count
     for item in scored_candidates:
         if len(selected) >= target_count:
             break
@@ -491,26 +600,29 @@ def generate_recommendations(
         c["adj_weight"] = w
         adjusted_items.append(c)
 
-    # Normalize weights to sum to 1.0 for the active recommendation count
     for c in adjusted_items:
         c["norm_weight"] = c["adj_weight"] / raw_weight_sum
 
-    # Fetch live prices for candidate tickers
     cand_tickers = [c["ticker"] for c in adjusted_items]
     prices = fetch_current_prices(cand_tickers)
 
-    # Step 1: Calculate raw integer quantities constrained by capital target
     preliminary = []
     for c in adjusted_items:
         t = c["ticker"]
         cp = max(1.0, float(prices.get(t, DEFAULT_PRICES.get(t, 500.0))))
-        target_inr = available_capital_inr * c["norm_weight"]
+        target_inr = total_rebalancing_capital_inr * c["norm_weight"]
 
-        # Base integer share units
-        qty = int(target_inr / cp)
+        held_info = held_tickers_map.get(t)
+        if held_info:
+            held_val = held_info["current_value"]
+            if target_inr > held_val:
+                qty = int((target_inr - held_val) / cp)
+            else:
+                qty = 0
+        else:
+            qty = int(target_inr / cp)
 
-        # Allow initial 1 share if target_inr >= 45% of unit price and within total capital budget
-        if qty == 0 and target_inr >= (cp * 0.45) and cp <= available_capital_inr:
+        if qty == 0 and not held_info and target_inr >= (cp * 0.45) and cp <= total_rebalancing_capital_inr:
             qty = 1
 
         preliminary.append({
@@ -518,24 +630,21 @@ def generate_recommendations(
             "ticker": t,
             "unit_price": cp,
             "target_inr": target_inr,
-            "qty": qty
+            "qty": qty,
+            "held_info": held_info
         })
 
-    # Step 2: Enforce hard budget ceiling (sum of qty * unit_price MUST NOT exceed available_capital_inr)
     total_spent = sum(p["qty"] * p["unit_price"] for p in preliminary)
 
-    while total_spent > available_capital_inr:
+    while total_spent > total_rebalancing_capital_inr:
         over_allocated = [p for p in preliminary if p["qty"] > 0]
         if not over_allocated:
             break
-
-        # Decrement qty for item with highest over-allocation relative to target_inr
         over_allocated.sort(key=lambda x: (x["qty"] * x["unit_price"] - x["target_inr"]), reverse=True)
         over_allocated[0]["qty"] -= 1
         total_spent = sum(p["qty"] * p["unit_price"] for p in preliminary)
 
-    # Step 3: Cash Optimization - Deploy remaining unspent cash into affordable candidates by target weight
-    remaining_cash = available_capital_inr - total_spent
+    remaining_cash = total_rebalancing_capital_inr - total_spent
 
     if remaining_cash > 0:
         affordable_candidates = list(preliminary)
@@ -551,32 +660,90 @@ def generate_recommendations(
                     p["qty"] += additional_units
                     remaining_cash -= (additional_units * cp)
 
-    # Step 4: Build final recommendation cards (filtering out any zero-quantity items)
     recommendations = []
     cat_summary = {}
+    action_counts = {"SELL": len(sell_holdings), "KEEP": 0, "TOP_UP": 0, "BUY": 0}
 
-    final_items = [p for p in preliminary if p["qty"] > 0]
+    card_id = 1
 
-    for idx, p in enumerate(final_items, 1):
+    # First: Add 🔴 SELL cards for user holdings marked for exit
+    for s in sell_holdings:
+        cp = round(s["current_price"], 2)
+        qty = int(s["qty"])
+        freed_cash = round(s["freed_cash"], 2)
+        sec = s["sector"]
+
+        card = {
+            "id": card_id,
+            "ticker": s["ticker"],
+            "instrument_name": s["instrument_name"],
+            "category": "Category A",
+            "category_name": "Rebalance & Exit",
+            "category_badge_color": "rose",
+            "asset_type": "EQUITY",
+            "action_type": "SELL",
+            "action_label": "🔴 SELL",
+            "current_holding_qty": qty,
+            "current_holding_value_inr": freed_cash,
+            "freed_cash_inr": freed_cash,
+            "action_summary": f"Sell all {qty} shares of {s['ticker']} at ₹{cp} to free ₹{freed_cash:,.2f} cash. ({s['reason']})",
+            "unit_price": cp,
+            "target_selling_price": cp,
+            "profit_per_share_inr": 0.0,
+            "total_expected_stock_profit_inr": 0.0,
+            "allocation_inr": 0.0,
+            "allocation_pct": 0.0,
+            "suggested_quantity": qty,
+            "sharpe_uplift": 0.0,
+            "hrp_risk_reduction_pct": 0.0,
+            "technical_momentum_signal": f"Exit Position (Unrealized PnL: {s['pnl_pct']}%)",
+            "quantitative_rationale": f"Rebalancing exit frees ₹{freed_cash:,.2f} cash to reallocate into higher Sharpe alpha opportunities.",
+            "macro_rationale": f"Reduces downside risk and overconcentration penalty in [{sec}] sector.",
+            "target_price_analytical_rationale": "Position exit for cash reallocation",
+            "expected_return_pct": 0.0
+        }
+        recommendations.append(card)
+        card_id += 1
+
+    # Second: Add 🔵 TOP_UP / 🟢 KEEP / 🚀 BUY cards
+    for p in preliminary:
         c = p["item"]
         cp = round(p["unit_price"], 2)
         qty = p["qty"]
-        alloc_inr = round(qty * cp, 2)
-        alloc_pct = round((alloc_inr / available_capital_inr) * 100.0, 2) if available_capital_inr > 0 else 0.0
+        held_info = p["held_info"]
 
-        # Quantitative Rationale
+        if held_info:
+            held_qty = int(held_info["qty"])
+            held_val = round(held_info["current_value"], 2)
+            if qty > 0:
+                action_type = "TOP_UP"
+                action_label = "🔵 TOP-UP"
+                action_summary = f"Buy {qty} additional shares of {c['ticker']} at ₹{cp} (Additional allocation: ₹{qty * cp:,.2f})."
+                action_counts["TOP_UP"] += 1
+            else:
+                action_type = "KEEP"
+                action_label = "🟢 KEEP"
+                action_summary = f"Hold existing {held_qty} shares of {c['ticker']} at current rate ₹{cp} (Value: ₹{held_val:,.2f})."
+                action_counts["KEEP"] += 1
+                qty = held_qty
+        else:
+            if qty <= 0:
+                continue
+            action_type = "BUY"
+            action_label = "🚀 BUY"
+            action_summary = f"Buy {qty} new shares of {c['ticker']} at ₹{cp} (Allocation: ₹{qty * cp:,.2f})."
+            action_counts["BUY"] += 1
+
+        alloc_inr = round(qty * cp, 2) if action_type in ["BUY", "TOP_UP"] else 0.0
+        alloc_pct = round((alloc_inr / total_rebalancing_capital_inr) * 100.0, 2) if total_rebalancing_capital_inr > 0 else 0.0
+
         quant_rat = (
             f"HRP covariance clustering reduces portfolio volatility by {c['risk_red']}%. "
             f"Expected Sharpe ratio uplift of +{c['sharpe']} based on historical backtest."
         )
 
-        # World Monitor Macro Rationale
-        if c["ticker"] in ["GOLDBEES.NS", "SILVERBEES.NS", "SETFGOLD.NS", "HDFCGOLD.NS", "ICICIGOLD.NS", "AXISGOLD.NS"]:
+        if c["ticker"] in ["GOLDBEES.NS", "SILVERBEES.NS", "SETFGOLD.NS", "HDFCGOLD.NS"]:
             macro_rat = f"Acts as direct hedge against USD/INR volatility (₹{macro_data.get('usd_inr', 83.45)}) and elevated Brent Crude ($84.5/bbl)."
-        elif c["ticker"] in ["EBBETF0430.NS", "LIQUIDBEES.NS", "GSEC10YEAR.NS"]:
-            macro_rat = f"Capital preservation shield against FII institutional outflow volatility ({macro_data.get('fii_net_flow_cr', -1250)} Cr net sell)."
-        elif c["ticker"] in ["MON100.NS", "MASPTOP50.NS", "MAFANG.NS"]:
-            macro_rat = "Provides global tech sector diversification immune to domestic Indian inflation & monsoon cycles."
         elif c["ticker"] in ["RELIANCE.NS", "LT.NS", "BEL.NS", "HAL.NS", "NTPC.NS", "SIEMENS.NS", "ABB.NS"]:
             macro_rat = "Core beneficiary of India national capex expansion, defense indigenization, and energy security."
         elif c["ticker"] in ["HDFCBANK.NS", "ICICIBANK.NS", "BANKBEES.NS", "SBIN.NS", "AXISBANK.NS", "KOTAKBANK.NS", "JIOFIN.NS"]:
@@ -586,40 +753,33 @@ def generate_recommendations(
 
         tech_signal = TECHNICAL_SIGNALS.get(c["ticker"], "EMA 20 > EMA 50 Bullish Trend")
 
-        # Multi-Factor Analytical, Mathematical & Geopolitical Target Sell Rate Calculation
         base_exp_ret = c["exp_return"]
-        
-        if c["ticker"] in ["RELIANCE.NS", "LT.NS", "BEL.NS", "HAL.NS", "NTPC.NS", "SIEMENS.NS", "ABB.NS"]:
-            macro_premium = 3.5
-            macro_desc = "Capex/Defense Premium +3.5%"
-        elif c["ticker"] in ["GOLDBEES.NS", "SILVERBEES.NS", "SETFGOLD.NS", "MON100.NS"]:
-            macro_premium = 2.8
-            macro_desc = "Safe-Haven FX Premium +2.8%"
-        elif c["ticker"] in ["HDFCBANK.NS", "ICICIBANK.NS", "BANKBEES.NS", "SBIN.NS", "AXISBANK.NS"]:
-            macro_premium = 2.2
-            macro_desc = "Credit Growth Premium +2.2%"
-        else:
-            macro_premium = 1.2
-            macro_desc = f"{active_regime} Premium +1.2%"
-            
+        macro_premium = 2.5 if c["ticker"] in ["RELIANCE.NS", "LT.NS", "BEL.NS", "HAL.NS"] else 1.2
         hrp_bonus = round(c["sharpe"] * 0.15, 2)
         effective_target_return_pct = round(base_exp_ret + macro_premium + hrp_bonus, 2)
-        
+
         target_selling_price = round(cp * (1.0 + effective_target_return_pct / 100.0), 2)
         profit_per_share_inr = round(target_selling_price - cp, 2)
-        total_expected_stock_profit_inr = round(profit_per_share_inr * qty, 2)
-        
+        total_expected_stock_profit_inr = round(profit_per_share_inr * (qty if qty > 0 else 1), 2)
+
         target_price_analytical_rationale = (
-            f"Base CAGR {base_exp_ret}% + {macro_desc} + HRP Volatility Offset (-{c['risk_red']}%)"
+            f"Base CAGR {base_exp_ret}% + Macro Premium {macro_premium}% + HRP Volatility Offset (-{c['risk_red']}%)"
         )
 
         card = {
-            "id": idx,
+            "id": card_id,
             "ticker": c["ticker"],
             "instrument_name": c["name"],
             "category": c["category"],
             "category_name": c["cat_name"],
             "category_badge_color": c["badge"],
+            "asset_type": c.get("asset_type", "EQUITY"),
+            "action_type": action_type,
+            "action_label": action_label,
+            "current_holding_qty": held_info["qty"] if held_info else 0.0,
+            "current_holding_value_inr": held_info["current_value"] if held_info else 0.0,
+            "freed_cash_inr": 0.0,
+            "action_summary": action_summary,
             "unit_price": cp,
             "target_selling_price": target_selling_price,
             "profit_per_share_inr": profit_per_share_inr,
@@ -637,20 +797,25 @@ def generate_recommendations(
         }
         recommendations.append(card)
         cat_summary[c["category"]] = round(cat_summary.get(c["category"], 0.0) + alloc_inr, 2)
+        card_id += 1
 
     existing_diag = calculate_portfolio_diagnostics(existing_holdings, threat_score)
     health_before = existing_diag["health_score"]
     health_after = min(96.5, round(health_before + 18.5, 1))
 
     return {
-        "total_capital_inr": available_capital_inr,
+        "total_capital_inr": total_rebalancing_capital_inr,
+        "fresh_capital_inr": round(fresh_capital_inr, 2),
+        "cash_generated_from_sales_inr": round(cash_generated_from_sales_inr, 2),
+        "total_rebalancing_capital_inr": round(total_rebalancing_capital_inr, 2),
         "risk_profile": risk_profile,
         "recommendation_count": len(recommendations),
         "recommendations": recommendations,
         "portfolio_health_before": health_before,
         "portfolio_health_after": health_after,
         "category_summary": cat_summary,
-        "optimization_method": "Hierarchical Risk Parity (HRP) + Black-Litterman World Monitor Macro Tilt"
+        "action_counts": action_counts,
+        "optimization_method": "Hierarchical Risk Parity (HRP) + Black-Litterman World Monitor Macro Tilt + Actionable Holdings Rebalance"
     }
 
 def calculate_target_selling_points(

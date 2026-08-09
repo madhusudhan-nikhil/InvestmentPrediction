@@ -1,544 +1,473 @@
-# BharatiQuant | Indian Investment Planning Platform
+# 🇮🇳 BharatiQuant — Indian Investment Planning & World Monitor Macro Engine
 
-[![Python](https://img.shields.io/badge/Python-3.14-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.141-green.svg)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-19-cyan.svg)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-8.2-purple.svg)](https://vitejs.dev)
-[![Awesome Systematic Trading](https://img.shields.io/badge/Awesome-Systematic%20Trading-gold.svg)](https://github.com/paperswithbacktest/awesome-systematic-trading)
-[![Dataset](https://img.shields.io/badge/Dataset-Top%20100%20NSE%20%2B%20500%20BSE-orange.svg)](backend/data/nse_tickers.json)
-[![Tests](https://img.shields.io/badge/Tests-48%20Passed-brightgreen.svg)](#-automated-testing--verification)
-[![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
-
-**BharatiQuant** is a full-stack Investment Planning & Quantitative Portfolio Optimization Platform tailored specifically for Indian Financial Markets (NSE & BSE). It combines quantitative portfolio optimization frameworks (*Hierarchical Risk Parity*, *Herfindahl-Hirschman Concentration Index*, *Black-Litterman Macro Tilt*, *QuantStats Downside Risk*) with real-time World Monitor geopolitical threat feeds and Indian domestic macroeconomic drivers to produce actionable, capital-scaled stock recommendations with target selling prices.
+> **Your personal AI-powered investment co-pilot for the Indian stock market (NSE / BSE).**
+> BharatiQuant helps you decide *what* to buy, *how much* to invest, *when* to sell, and *what could go wrong* — all in plain ₹ Rupees with live market data.
 
 ---
 
-## 🚀 Core Capabilities
+## 📖 Table of Contents
 
-| Capability | Description |
+- [What Is BharatiQuant?](#what-is-bharatiquant)
+- [Quick Start](#-quick-start)
+- [The 4 Main Views (Tabs)](#-the-4-main-views-tabs)
+  - [📊 Tab 1: Portfolio Diagnostic & Optimization Dashboard](#-tab-1-portfolio-diagnostic--optimization-dashboard)
+  - [🎯 Tab 2: Target Profit & Sell Date Predictor](#-tab-2-target-profit--sell-date-predictor)
+  - [🌐 Tab 3: World Monitor Macro Simulator](#-tab-3-world-monitor-macro-simulator)
+  - [⚙️ Tab 4: Ticker Universe Manager](#️-tab-4-ticker-universe-manager)
+- [The Top Bar — Live Market Pulse](#-the-top-bar--live-market-pulse)
+- [Glossary of Terms](#-glossary-of-terms-for-beginners)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [License](#-license)
+
+---
+
+## What Is BharatiQuant?
+
+Imagine you have ₹5 Lakhs to invest in Indian stocks. You're probably asking yourself:
+
+1. **"Which stocks should I buy?"** — BharatiQuant recommends 10–20 stocks/ETFs tailored to your budget and risk comfort.
+2. **"How much should I put into each?"** — It calculates exact ₹ amounts and share quantities for each recommendation.
+3. **"At what price should I sell to make a profit?"** — It tells you the *target selling price* per share and the *probable date* you can sell.
+4. **"What if oil prices spike or the Rupee crashes?"** — It lets you simulate real-world economic shocks and see how your investments would be affected.
+
+**BharatiQuant** does all of this using quantitative finance methods (like Hierarchical Risk Parity) combined with live macro data (oil prices, VIX volatility, FII/DII flows, RBI rates) — but presents everything in simple cards, tables, and sliders that any investor can understand.
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+| Requirement | Version |
 |---|---|
-| **HRP Portfolio Optimization** | Hierarchical Risk Parity via scipy linkage clustering & recursive bisection variance allocation |
-| **Dynamic Capital Scaling** | Recommendation count auto-scales from 6 → 24 positions based on available capital (₹50K → ₹25L+) |
-| **Target Selling Point Predictor** | 3-tier analytical model: Base CAGR + Geopolitical Macro Premium + HRP Sharpe Uplift |
-| **Historical Scenario Backtesting** | Backtest target price realization across 4 market regimes (2022–2026) |
-| **Geopolitical Stress Simulator** | 7-variable macro shock simulation with World Monitor MCP threat scenarios |
-| **Indian Domestic Macro Overlay** | India VIX, USD/INR, FII/DII Net Flows, RBI Repo Rate, GDELT, Brent Crude |
-| **QuantStats Downside Risk** | Sortino, Calmar, VaR 95%, CVaR 95%, Max Drawdown analysis |
-| **1-Click Broker Execution** | Order payload generation for Zerodha Kite, Angel One, and Upstox |
-| **Ticker Universe Manager** | Editable grid for Top 100 NSE + Top 500 BSE with on-demand sync |
+| Python | 3.10+ |
+| Node.js | 18+ |
+| npm | 9+ |
+
+### 1. Start the Backend (API Server)
+
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+```
+
+The API server starts at **http://localhost:8000**. Visit http://localhost:8000/docs for the interactive API documentation.
+
+### 2. Start the Frontend (Web UI)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The web UI starts at **http://localhost:5173**. Open it in your browser — you're ready to go!
 
 ---
 
-## 📂 Comprehensive Codebase & File Structure
+## 🖥️ The 4 Main Views (Tabs)
+
+When you open BharatiQuant, you see **4 tabs** across the top. Each tab is a different tool for a different question you might have as an investor.
+
+---
+
+### 📊 Tab 1: Portfolio Diagnostic & Optimization Dashboard
+
+> **The Question It Answers:** *"I have some money to invest (or already have stocks). What's the smartest way to allocate my capital?"*
+
+This is your main dashboard and it has two parts: a **Sidebar** (left) where you set your preferences, and a **Main Panel** (right) where you see results.
+
+#### Sidebar — Your Investment Preferences
+
+The sidebar walks you through 4 steps:
+
+| Step | Parameter | What It Means | Your Options |
+|---|---|---|---|
+| **1** | **Portfolio Holdings File** | If you already own stocks, upload a CSV/Excel file listing them. The app understands columns like `Ticker`, `Symbol`, `Quantity`, `Purchase Price`, etc. | Upload a `.csv` or `.xlsx` file, or click **"Load Sample Nifty 50 Holdings"** to try with demo data |
+| **2** | **Deployment Capital (₹ INR)** | How much fresh money do you want to invest right now? | Type any amount, or click presets: **₹50K**, **₹1 Lakh**, **₹5 Lakhs**, **₹10 Lakhs**, **₹25 Lakhs** |
+| **3** | **Risk Profile** | How comfortable are you with your investments going up and down in value? | **Conservative** — "Protect my money first" (safer picks, more bonds/gold). **Moderate** — "Balance between safety and growth" (mix of stable & growth stocks). **Aggressive** — "I want maximum returns, I can handle drops" (high-growth, momentum stocks) |
+| **4** | **Asset Class Focus** | What *type* of investments do you prefer? | **🚀 Direct Equity / Stocks** — Mostly individual company shares (~90% stocks). **💎 100% Direct Equities Only** — Only individual stocks, zero mutual funds/ETFs. **⚖️ Balanced Mix** — A mix of stocks + ETFs + mutual funds. **🛡️ Mutual Funds & ETFs** — Mostly index funds and ETFs (less risky, more diversified) |
+
+After setting your preferences, click the green **"Generate Optimized Portfolio"** button.
+
+#### Main Panel — What You Get Back
+
+##### 🃏 Recommendation Cards
+
+You'll see **10–20 stock/ETF recommendation cards**, each showing:
+
+| Field | What It Tells You |
+|---|---|
+| **Ticker** | The stock symbol, e.g., `RELIANCE.NS` (Reliance Industries on NSE) |
+| **Category Badge** | **A** = Core holdings to rebalance, **B** = Diversifiers, **C** = High-alpha momentum plays, **D** = Macro hedges (defensive) |
+| **Asset Type** | Whether it's a 🚀 *Direct Stock* or 🛡️ *Mutual Fund / ETF* |
+| **Current Rate** | Today's live share price in ₹ |
+| **Target Sell Rate** | The price at which you should consider selling for profit |
+| **Profit / Share** | How much profit (₹) you'd make per share if it hits the target |
+| **Suggested Qty** | How many shares to buy |
+| **Target Allocation** | How much ₹ to spend on this particular stock |
+| **Risk Reduction** | How much this stock reduces your overall portfolio risk (%) |
+| **Expected Return** | The estimated annual return percentage |
+| **Macro & HRP Rationale** | A plain-English explanation of *why* this stock was recommended |
+
+You can **filter** the cards by:
+- **Category** (A / B / C / D or All)
+- **Asset Type** (Stocks only, Funds only, or All)
+
+##### 📋 Executive Action Summary
+
+At the top of the recommendations, you'll see a summary banner with:
+- **Top 3 allocations** (your biggest recommended bets)
+- **Health Improvement** — How much better your portfolio becomes after following the advice
+- **Export Execution CSV** button — Download the full plan as a spreadsheet you can take to your broker
+
+##### 📊 Portfolio Diagnostics (appears when you upload holdings)
+
+If you uploaded your existing portfolio, you'll also see a diagnostics section:
+
+| Metric | What It Means (In Plain English) |
+|---|---|
+| **Total Portfolio Value** | What your current stocks are worth today at live prices |
+| **Unrealized P&L** | How much profit/loss you're sitting on (haven't sold yet) |
+| **Health Score (0–100)** | An overall grade for your portfolio. Above 80 = healthy, below 60 = fragile |
+| **HHI Concentration Index** | Measures if you're putting too many eggs in one basket. Low = well-diversified, High = concentrated risk |
+| **Sortino Ratio** | How well your portfolio returns compensate for *downside* risk (higher is better) |
+| **Calmar Ratio** | Returns relative to the worst historical drop (higher is better) |
+| **VaR (95%)** | "Value at Risk" — The maximum you could lose on a bad day, 95% of the time |
+| **Sector Allocation Pie Chart** | Visual breakdown showing what % of your money is in IT, Banking, Oil & Gas, etc. |
+| **Normalized Holdings Table** | Your stocks cleaned up with live prices, current values, and portfolio weights |
+
+---
+
+### 🎯 Tab 2: Target Profit & Sell Date Predictor
+
+> **The Question It Answers:** *"I want to make ₹X profit from ₹Y capital within Z months. Which stocks should I buy, at what price, and when should I sell?"*
+
+This is the **goal-based investing** tool. You tell it your financial goal, and it figures out the plan.
+
+#### Input Parameters
+
+| Parameter | What It Means | Example |
+|---|---|---|
+| **Capital (₹)** | How much money you're investing | ₹1,00,000 |
+| **Target Profit (₹)** | How much profit you want to earn | ₹5,000 (i.e. 5% return) |
+| **Horizon (Months)** | How long you're willing to wait | 1 month, 3 months, 6 months, 1 year, 2 years, or 3 years |
+
+Click **"Calculate Exit Points"** to get your plan.
+
+#### What You Get Back
+
+##### Summary Cards
+
+| Card | What It Shows |
+|---|---|
+| **Required Gain Target** | The % return your money needs to achieve (auto-calculated from your capital & profit inputs) |
+| **Total Portfolio Profit** | The estimated total ₹ profit across all recommended stocks |
+| **Horizon Strategy Regime** | The strategy style: ⚡ *Short-Term High Velocity Alpha* (1–2 months), ⚖️ *Medium-Term Balanced Growth* (3–6 months), or 🛡️ *Long-Term Wealth Compounder* (12+ months) |
+| **Probable Exit Window** | The expected date range when you should sell |
+
+##### Target Selling Table
+
+For each recommended stock, you see:
+
+| Column | What It Tells You |
+|---|---|
+| **Suggested Ticker** | The stock to buy |
+| **Current Rate** | Today's price per share |
+| **Target Sell Rate** | The price to sell at (highlighted in gold ₹) |
+| **Profit / Share** | Your profit per share in ₹ |
+| **Total Stock Profit** | Total ₹ profit from this stock position |
+| **Qty to Buy Today** | How many shares to purchase right now |
+| **Est. Hold Period** | How long you'll likely hold (e.g., "0.9 months, 27 days") |
+| **Probable Sell Date** | The calendar date to plan your exit (e.g., "Aug 25, 2026") |
+| **Target Realization Risk** | A difficulty rating — **LOW** (easy target), **MODERATE**, **HIGH**, or **VERY HIGH** (ambitious target) |
+| **History Backtest** | Click "Backtest" to see how this stock performed historically against this target |
+
+You can also click **"Export Exit Plan CSV"** to download the full plan as a spreadsheet.
+
+##### 📈 Stock Price History & Historical Backtest Simulator
+
+Below the table, there's a **historical performance chart** and **scenario simulation cards**:
+
+- **Price Chart**: A line chart showing the stock's actual price over 1 month / 3 months / 6 months / 1 year. A dashed gold line shows where your target selling price sits.
+- **Historical Scenario Cards**: These simulate *"What if I had bought this stock at various points in the past?"* — showing whether the target price was hit, how many days it took, and the peak gain achieved.
+
+You can select any recommended stock from the dropdown and choose the historical period to analyze.
+
+---
+
+### 🌐 Tab 3: World Monitor Macro Simulator
+
+> **The Question It Answers:** *"What happens to my investments if oil prices spike, the Rupee crashes, or a geopolitical crisis erupts?"*
+
+This is your **"what-if" stress testing** tool. It's divided into two sections.
+
+#### Section 1: 5 Probable Day-to-Day Scenarios
+
+At the top, you see **5 scenario cards** dynamically generated from live global data. These represent real-world risks that could happen soon:
+
+| Example Scenario | Category | What It Simulates |
+|---|---|---|
+| "Middle East Escalation & Strait of Hormuz Supply Crisis" | Energy & Geopolitical Conflict | Oil supply disruption sending crude prices surging |
+| "US Fed Hawkish Stance & Global DXY Dollar Surge" | Monetary Policy & FX Pressure | Strong US dollar crushing emerging market currencies |
+| "Indo-Pacific Semiconductor & Hardware Trade Embargo" | Technology & Supply Chain | Tech component supply chains getting disrupted |
+| "Southwest Monsoon Deficit & Domestic Food Inflation Surge" | Domestic Macro & RBI Tightening | Bad monsoon forcing RBI to raise interest rates |
+| "Red Sea Freight Rate Multiplier & Global Export Logistics Crunch" | Global Trade & Logistics | Shipping disruptions tripling freight costs |
+
+Each card shows:
+- **Severity Badge**: CRITICAL / HIGH / MODERATE
+- **Probability %**: How likely this scenario is (calculated from live data)
+- **Shock Tags**: Quick view of the key impact parameters (e.g., "Crude +35%", "VIX +55%")
+
+**Click any scenario card** to instantly simulate it.
+
+#### Section 2: Shock Control Sliders (Manual Mode)
+
+If you want to create your own custom "what-if" scenario, use the **7 sliders**:
+
+| Slider | What It Controls | Range | Real-World Meaning |
+|---|---|---|---|
+| 🛢️ **Brent Crude Spike** | Oil price increase | 0% – 60% | Higher oil = higher petrol/diesel prices, inflation, hurts airlines & auto companies |
+| 💵 **USD/INR Depreciation** | Rupee weakening against Dollar | 0% – 15% | Weaker Rupee = imports become expensive, FIIs pull money out |
+| 📈 **India VIX Volatility** | Market fear/panic level | 0% – 100% | Higher VIX = more uncertainty, stock prices swing wildly |
+| 💸 **FII Net Sell Outflow** | Foreign investors pulling money out | ₹0 – ₹15,000 Cr | Large FII selling = heavy selling pressure on Indian stocks |
+| 🏦 **RBI Repo Rate Shift** | Central bank interest rate increase | 0 – 150 bps | Higher rates = borrowing becomes expensive, slows growth, hurts banks |
+| 🌐 **GDELT Conflict Escalation** | Global geopolitical tensions | 0% – 100% | Wars, sanctions, trade disputes = supply chain disruptions |
+| 💲 **DXY Dollar Index Rally** | US Dollar strength globally | 0% – 12% | Strong Dollar = capital flows away from India to US |
+
+After adjusting sliders, click **"Recalculate Stress Test"**.
+
+#### Simulation Results
+
+| Result | What It Shows |
+|---|---|
+| **Simulated Threat Score** | New macro threat level out of 100 (color-coded: green = safe, amber = caution, red = danger) |
+| **Estimated Portfolio Impact** | How much your equity holdings would drop (e.g., "-8.5%") |
+| **VaR Risk Increase** | How much additional risk your portfolio takes on |
+| **Active Macro Regime** | The market state under this scenario (e.g., "High Crude Oil Inflation & Geopolitical Risk") |
+| **Scenario Narrative** | A human-readable paragraph explaining exactly what happens and why |
+| **Asset Class Breakdown** | Impact on Equities, Bonds, Gold, and Cash — some go down, some go up |
+| **Vulnerable Sectors** | Industries that would be hit hardest (e.g., Airlines, Auto, Paints) |
+| **Resilient Sectors** | Industries that would hold up or benefit (e.g., IT Exporters, Gold, Pharma) |
+| **Defensive Hedges** | Specific tickers to buy as protection (e.g., GOLDBEES.NS, BHARATBOND.NS) |
+
+---
+
+### ⚙️ Tab 4: Ticker Universe Manager
+
+> **The Question It Answers:** *"What's in the stock database, and can I customize it?"*
+
+This is the **admin panel** for the underlying stock database that powers all recommendations. Think of it as the "ingredients list" that BharatiQuant picks from when suggesting stocks.
+
+#### What You Can Do
+
+| Action | How | What Happens |
+|---|---|---|
+| **Browse the database** | Scroll through the table | See all ~500+ Indian securities (NSE & BSE) with their properties |
+| **Search** | Type in the search box | Filter by stock symbol, company name, or sector |
+| **Filter by Category** | Click A / B / C / D pills | See only stocks in a specific recommendation category |
+| **Filter by Exchange** | Click NSE / BSE toggle | See only NSE-listed or BSE-listed stocks |
+| **Edit any field** | Click on any cell in the table | Modify the name, sector, price, weight, Sharpe ratio, risk reduction %, or technical signal |
+| **Delete a stock** | Click the 🗑️ button | Remove a security from the universe |
+| **Add a new stock** | Click "➕ Add Security" | Opens a form to add any custom stock to the database |
+| **Sync live data** | Click "🔄 Sync Top 500 BSE & 100 NSE" | Refreshes the database with the latest top securities from Indian exchanges |
+| **Save changes** | Click "💾 Save All Changes" | Persists your edits to the backend JSON database |
+
+#### Column Explanations
+
+| Column | What It Means |
+|---|---|
+| **Symbol** | NSE ticker (`.NS`) or BSE ticker (`.BO`) |
+| **Instrument Name** | Full company/fund name |
+| **Sector** | Industry classification (e.g., "Financials", "Oil & Gas", "Information Technology") |
+| **Category** | The recommendation bucket: **A** (core rebalance), **B** (diversifiers), **C** (high-alpha), **D** (macro hedges) |
+| **Default Price (₹)** | Benchmark reference price used when live data is unavailable |
+| **Base Weight** | How much portfolio weight this stock gets by default (e.g., 0.02 = 2%) |
+| **Sharpe Ratio** | Risk-adjusted return metric (higher = better reward for the risk taken) |
+| **Risk Reduction %** | How much adding this stock reduces overall portfolio risk |
+| **Technical Signal** | Current price trend indicator (e.g., "EMA 20 > EMA 50 Bullish Trend") |
+
+---
+
+## 🔝 The Top Bar — Live Market Pulse
+
+The top bar is always visible across all tabs. It shows:
+
+| Indicator | What It Tells You |
+|---|---|
+| **India Macro Threat Score (0–100)** | An overall danger rating for the Indian market. Green (< 40) = safe to invest, Amber (40–65) = proceed with caution, Red (> 65) = defensive mode |
+| **Active Market Regime** | The current market state (e.g., "BULLISH_DOMESTIC_GROWTH" = good times, "FII_OUTFLOW_VOLATILITY" = turbulence) |
+| **Brent Crude Oil** | Global oil price per barrel in USD — high oil hurts India (we import 80%+ of our oil) |
+| **USD / INR** | Exchange rate — a rising number means the Rupee is weakening |
+| **India VIX** | Market volatility ("fear gauge") — below 15 is calm, above 20 is nervous |
+| **FII Net Flow** | Whether foreign institutional investors are buying (+green) or selling (-red) Indian stocks, in ₹ Crore |
+
+Click **"Sync Pulse"** to refresh all indicators with the latest data.
+
+---
+
+## 📚 Glossary of Terms (For Beginners)
+
+| Term | Simple Explanation |
+|---|---|
+| **NSE / BSE** | India's two main stock exchanges — National Stock Exchange and Bombay Stock Exchange |
+| **Ticker** | A short code for a stock, e.g., `RELIANCE.NS` means Reliance Industries on NSE |
+| **ETF** | Exchange-Traded Fund — a basket of stocks you can buy as one unit (like NIFTYBEES tracks the Nifty 50 index) |
+| **Portfolio** | Your collection of investments |
+| **HRP (Hierarchical Risk Parity)** | A mathematical method to spread your money across stocks so no single stock can blow up your portfolio |
+| **HHI (Herfindahl-Hirschman Index)** | Measures concentration — are you too heavily invested in just 1–2 stocks? |
+| **Sharpe Ratio** | How much return you get for each unit of risk. Higher = better |
+| **Sortino Ratio** | Like Sharpe, but only penalizes *downside* risk (ignores upside volatility) |
+| **VaR (Value at Risk)** | The maximum loss you could face on a bad day (95% confidence) |
+| **FII / DII** | Foreign Institutional Investors / Domestic Institutional Investors — large funds that move markets |
+| **India VIX** | Volatility Index — measures expected market turbulence over 30 days |
+| **Brent Crude** | The global benchmark for oil prices. India imports most of its oil, so this directly affects inflation |
+| **USD / INR** | The exchange rate between US Dollar and Indian Rupee |
+| **RBI Repo Rate** | The interest rate at which RBI lends to banks. Higher rate = costlier loans = slower growth |
+| **GDELT** | Global Database of Events, Language, and Tone — tracks geopolitical tensions worldwide |
+| **DXY** | US Dollar Index — measures the Dollar's strength against a basket of currencies |
+| **bps (basis points)** | 1 bps = 0.01%. So "50 bps" = 0.50% interest rate change |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 19 + Vite 8, Recharts (charts), Lucide Icons, Axios |
+| **Backend** | Python FastAPI, Uvicorn |
+| **Data & Finance** | yfinance (live market data), pandas, numpy, scipy, PyPortfolioOpt |
+| **Styling** | Vanilla CSS with glassmorphism dark theme |
+
+---
+
+## 📁 Project Structure
 
 ```
 InvestmentPredictor/
-│
 ├── backend/
+│   ├── main.py                              # FastAPI server & all API endpoints
+│   ├── schemas.py                           # Pydantic data models
+│   ├── requirements.txt                     # Python dependencies
 │   ├── data/
-│   │   └── nse_tickers.json              # Top 100 NSE + Top 500 BSE securities database (~255 KB)
-│   ├── services/
-│   │   ├── mcp_client.py                 # World Monitor MCP Client: Brent, USD/INR, VIX, FII/DII, GDELT, DXY
-│   │   ├── quant_engine_india.py         # Core Quantitative Engine: HRP, HHI, BL Macro Tilt, Target Selling Points
-│   │   └── ticker_sync_service.py        # Market Dataset Builder: Top 100 NSE + Top 500 BSE universe generator
-│   ├── tests/
-│   │   ├── conftest.py                   # Pytest fixtures: TestClient, sample holdings, CSV/Excel generators, macro mocks
-│   │   ├── test_e2e_integration.py       # 20 E2E API route tests: portfolio parse, recommendations, stress, broker, tickers
-│   │   ├── test_mcp_client.py            # 3 unit tests: threat score, yfinance fallback, singleton client
-│   │   ├── test_quant_engine.py          # 15 unit tests: HRP, HHI, target selling, horizon selection, price history
-│   │   └── test_stress_simulator.py      # 2 integration tests: probable scenarios, multi-variable stress
-│   ├── main.py                           # FastAPI application: 12 REST endpoints, CORS, CSV/Excel parser
-│   ├── schemas.py                        # 22 Pydantic models for all request/response contracts
-│   └── requirements.txt                  # Python dependencies
+│   │   └── nse_tickers.json                 # Local JSON database of ~500+ securities
+│   └── services/
+│       ├── mcp_client.py                    # World Monitor macro data service
+│       ├── quant_engine_india.py            # Core quantitative engine (HRP, recommendations, targets)
+│       └── ticker_sync_service.py           # NSE/BSE ticker synchronization
 │
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── TopBar.jsx                # Live macro ticker: threat gauge (/100), regime badge, Brent/VIX/FII
-│   │   │   ├── Sidebar.jsx               # CSV/Excel uploader, ₹ capital presets, risk profile selector
-│   │   │   ├── DiagnosticsPanel.jsx      # Health Score (/100), HHI, QuantStats, sector donut chart
-│   │   │   ├── RecommendationPanel.jsx   # HRP allocation cards, target sell rates, category filters, CSV export
-│   │   │   ├── TargetProfitPredictor.jsx # Target profit calculator, exit schedule, historical price charts
-│   │   │   ├── MacroSimulator.jsx        # 7-slider stress simulator, 5 World Monitor scenarios, asset heatmap
-│   │   │   └── TickerManager.jsx         # Editable securities grid, add/delete/sync, exchange filters
-│   │   ├── App.jsx                       # Root component: 4-tab navigation, global state, API orchestration
-│   │   ├── index.css                     # Glassmorphic dark design system (Inter + JetBrains Mono)
-│   │   └── main.jsx                      # Vite React entry point
-│   ├── index.html                        # HTML document entry
-│   ├── package.json                      # React 19, Vite 8.2, Recharts 3.10, Lucide, Axios
-│   └── vite.config.js                    # Vite bundler configuration
+│   ├── index.html                           # Entry point
+│   ├── package.json                         # Node.js dependencies
+│   ├── vite.config.js                       # Vite bundler configuration
+│   └── src/
+│       ├── App.jsx                          # Main app layout & state management
+│       ├── App.css                          # Application styles
+│       ├── index.css                        # Global CSS with design tokens
+│       ├── main.jsx                         # React entry point
+│       └── components/
+│           ├── TopBar.jsx                   # Live market pulse header
+│           ├── Sidebar.jsx                  # Investment preferences panel
+│           ├── RecommendationPanel.jsx      # Stock recommendation cards
+│           ├── DiagnosticsPanel.jsx         # Portfolio health & concentration analysis
+│           ├── TargetProfitPredictor.jsx    # Goal-based profit & sell-date calculator
+│           ├── MacroSimulator.jsx           # Stress testing & scenario simulator
+│           └── TickerManager.jsx            # Stock database admin panel
 │
 ├── docs/
-│   └── images/
-│       └── bharatiquant_flow_infographic.png  # Platform architecture infographic
+│   └── images/                              # Documentation images
 │
-└── README.md                             # This file
+└── README.md                                # This file
 ```
 
 ---
 
-## 🔄 System Architecture & Dataflow Diagrams
+## API Endpoints Reference
 
-### High-Level Architecture Overview
-
-```mermaid
-graph TB
-    subgraph Frontend["🖥️ Frontend (React 19 + Vite 8.2)"]
-        TB[TopBar.jsx<br/>Macro Ticker]
-        SB[Sidebar.jsx<br/>Inputs & Upload]
-        DP[DiagnosticsPanel.jsx<br/>Health & Risk]
-        RP[RecommendationPanel.jsx<br/>HRP Allocation]
-        TPP[TargetProfitPredictor.jsx<br/>Selling Points & Backtest]
-        MS[MacroSimulator.jsx<br/>Stress Simulator]
-        TM[TickerManager.jsx<br/>Universe Manager]
-        APP[App.jsx<br/>State & Routing]
-    end
-
-    subgraph Backend["⚙️ Backend (FastAPI 0.141)"]
-        MAIN[main.py<br/>12 REST Endpoints]
-        SCH[schemas.py<br/>22 Pydantic Models]
-        QE[quant_engine_india.py<br/>HRP + BL Engine]
-        MCP[mcp_client.py<br/>World Monitor MCP]
-        TSS[ticker_sync_service.py<br/>Dataset Builder]
-    end
-
-    subgraph Data["📊 Data Sources"]
-        YF[yfinance API<br/>Live NSE/BSE Prices]
-        NSE_DB[(nse_tickers.json<br/>Top 100 NSE + 500 BSE)]
-        GEO[World Monitor<br/>Geopolitical Feeds]
-    end
-
-    APP --> TB & SB & DP & RP & TPP & MS & TM
-    APP -->|HTTP REST| MAIN
-    MAIN --> SCH
-    MAIN --> QE & MCP & TSS
-    QE --> YF & NSE_DB
-    MCP --> YF & GEO
-    TSS --> NSE_DB
-```
-
----
-
-### Workflow 1: Portfolio Parse & Diagnostics
-
-```mermaid
-flowchart TD
-    A["👤 User uploads CSV/Excel<br/>or loads sample portfolio"] --> B["Sidebar.jsx<br/>handleUploadCSV()"]
-    B -->|"FormData / raw JSON"| C["POST /api/parse-portfolio<br/>main.py: parse_portfolio()"]
-    C --> D["pandas: Multi-alias<br/>column matching & extraction"]
-    D --> E["normalize_ticker()<br/>RELIANCE → RELIANCE.NS<br/>INFY.BO → INFY.NS"]
-    E --> F["get_macro_pulse()<br/>Fetch threat score"]
-    F --> G["calculate_portfolio_diagnostics()"]
-
-    subgraph Diagnostics["Portfolio Health Engine"]
-        G --> G1["fetch_current_prices()<br/>yfinance + JSON fallback"]
-        G --> G2["HHI = Σ wᵢ²<br/>Concentration Index"]
-        G --> G3["QuantStats Metrics<br/>Sortino · Calmar · VaR 95%<br/>CVaR 95% · Max Drawdown"]
-        G --> G4["Sector Breakdown<br/>& Correlation Matrix"]
-        G --> G5["Portfolio Health Score<br/>(1 → 100)"]
-    end
-
-    G5 --> H["PortfolioDiagnostics schema"]
-    H --> I["DiagnosticsPanel.jsx<br/>Health badge · HHI gauge<br/>Sector donut · Holdings table"]
-
-    style Diagnostics fill:#1a1e2e,stroke:#10b981,stroke-width:2px
-```
-
----
-
-### Workflow 2: World Monitor & Indian Macro Intelligence
-
-```mermaid
-flowchart TD
-    A["⏱️ Auto-refresh on mount<br/>or manual Sync Pulse click"] --> B["GET /api/macro-pulse<br/>main.py: get_macro_pulse()"]
-    B --> C["mcp_client.py<br/>WorldMonitorMCPClient"]
-
-    C --> D1["yfinance: BZ=F<br/>Brent Crude ($/bbl)"]
-    C --> D2["yfinance: INR=X<br/>USD/INR Exchange Rate"]
-    C --> D3["yfinance: ^INDIAVIX<br/>India Volatility Index"]
-    C --> D4["yfinance: DX-Y.NYB<br/>DXY Dollar Index"]
-    C --> D5["Domestic Overlay<br/>FII/DII Net Flows (₹ Cr)<br/>RBI Repo Rate (6.50%)"]
-    C --> D6["GDELT Geopolitical<br/>Tension Index"]
-
-    D1 & D2 & D3 & D4 & D5 & D6 --> E["Threat Score Engine<br/>Dynamic Score (0–100)"]
-
-    E -->|"Score > 70"| F1["🔴 HIGH_CRUDE_INFLATION_RISK"]
-    E -->|"50 ≤ Score ≤ 70"| F2["🟡 FII_OUTFLOW_VOLATILITY"]
-    E -->|"Score < 50"| F3["🟢 BULLISH_DOMESTIC_GROWTH"]
-    E -->|"Gold flight detected"| F4["🟣 RISK_OFF_GOLD_FLIGHT"]
-
-    F1 & F2 & F3 & F4 --> G["MacroPulseResponse"]
-    G --> H["TopBar.jsx<br/>Threat gauge · Regime badge<br/>Live ticker strip"]
-
-    style E fill:#1a1e2e,stroke:#f59e0b,stroke-width:2px
-```
-
----
-
-### Workflow 3: Black-Litterman HRP Portfolio Optimization & Recommendations
-
-```mermaid
-flowchart TD
-    A["👤 User clicks<br/>Generate Optimized Portfolio"] --> B["POST /api/recommend-inr<br/>main.py: get_recommendations()"]
-
-    B --> C["generate_recommendations()"]
-
-    C --> D["load_ticker_dataset()<br/>574 securities from<br/>nse_tickers.json"]
-
-    C --> E["Dynamic Capital Scaling<br/>₹50K → 6 positions<br/>₹1L → 8 · ₹5L → 14<br/>₹10L → 18 · ₹25L+ → 24"]
-
-    C --> F["Black-Litterman<br/>Macro Tilt Multiplier<br/>Adjusts weights by<br/>regime & threat score"]
-
-    C --> G["HRP Linkage Clustering<br/>D(i,j) = √(0.5 × (1 − ρᵢⱼ))<br/>Single-linkage tree<br/>Recursive bisection"]
-
-    C --> H["Category Guarantee Engine"]
-
-    H --> H1["Cat A: Rebalance<br/>Existing holdings optimization"]
-    H --> H2["Cat B: Diversifiers<br/>Uncorrelated assets"]
-    H --> H3["Cat C: Systematic Alpha<br/>High Sharpe momentum"]
-    H --> H4["Cat D: Macro Hedges<br/>GOLDBEES · SILVERBEES"]
-
-    C --> I["fetch_current_prices()<br/>Live NSE prices via yfinance"]
-
-    C --> J["Integer Share Allocation<br/>Hard budget cap per position<br/>Cash deployment optimization"]
-
-    C --> K["Target Sell Rate Calculation<br/>Pₜₐᵣ = Pᵢ × (1 + Rₑff/100)<br/>Rₑff = Base CAGR + Macro Premium<br/>+ HRP Sharpe Uplift"]
-
-    J & K --> L["RecommendationResponse<br/>+ RecommendationCard[]"]
-    L --> M["RecommendationPanel.jsx<br/>Category filter pills<br/>HRP cards with sell rates<br/>Total deployment summary<br/>1-click CSV export"]
-
-    style E fill:#1a1e2e,stroke:#6366f1,stroke-width:2px
-    style K fill:#1a1e2e,stroke:#10b981,stroke-width:2px
-```
-
----
-
-### Workflow 4: Target Profit & Selling Point Predictor
-
-```mermaid
-flowchart TD
-    A["👤 User enters:<br/>Capital · Target Profit · Time Horizon<br/>Risk Profile"] --> B["POST /api/target-selling-point<br/>main.py: get_target_selling_point()"]
-
-    B --> C["calculate_target_selling_points()"]
-
-    C --> D["3-Tier Analytical Framework"]
-
-    subgraph Pricing["Target Selling Price Model"]
-        D --> D1["Tier 1: Fundamental Base<br/>Historical CAGR from<br/>yfinance 1Y returns"]
-        D --> D2["Tier 2: Geopolitical Premium<br/>Macro regime adjustment<br/>based on threat score"]
-        D --> D3["Tier 3: HRP Risk Adjustment<br/>Sharpe-weighted uplift<br/>from portfolio optimization"]
-        D1 & D2 & D3 --> D4["Effective Target Return %<br/>Rₑff = CAGR + Macro + Sharpe"]
-    end
-
-    D4 --> E["Pₜₐᵣ = Pᵢ × (1 + Rₑff/100)"]
-    E --> F["Profit/Share = Pₜₐᵣ − Pᵢ"]
-    E --> G["Dynamic Velocity<br/>Holding Days & Months"]
-    E --> H["Difficulty Rating<br/>Easy · Moderate · Hard<br/>Aggressive · Speculative"]
-    E --> I["Probable Exit Window"]
-
-    F & G & H & I --> J["TargetSellingPointResponse"]
-    J --> K["TargetProfitPredictor.jsx<br/>KPI summary cards<br/>Exit schedule table<br/>CSV export"]
-    J --> L["RecommendationPanel.jsx<br/>Inline sell rate column<br/>Total profit aggregation"]
-
-    style Pricing fill:#1a1e2e,stroke:#f59e0b,stroke-width:2px
-```
-
----
-
-### Workflow 5: Historical Scenario Backtesting
-
-```mermaid
-flowchart TD
-    A["👤 User clicks<br/>History Backtest button<br/>on a ticker row"] --> B["GET /api/ticker-history<br/>?ticker=TCS.NS<br/>&period=1y<br/>&target_profit_pct=15"]
-
-    B --> C["fetch_ticker_price_history()"]
-
-    C --> D["yfinance: Download<br/>Daily OHLCV Data"]
-
-    C --> E["4 Historical Regime<br/>Scenario Simulations"]
-
-    subgraph Regimes["Market Regime Backtests"]
-        E --> E1["2026 YTD Expansion<br/>Bull market entry"]
-        E --> E2["2024 Crude Shock<br/>Oil price spike regime"]
-        E --> E3["2023 RBI Tightening<br/>Rate hike cycle"]
-        E --> E4["2022 FII Sell-off<br/>Foreign outflow regime"]
-    end
-
-    E1 & E2 & E3 & E4 --> F["For each regime:<br/>• Was target price hit?<br/>• Days to reach target<br/>• Max price reached<br/>• Maximum gain %"]
-
-    D --> G["TickerHistoryResponse"]
-    F --> G
-
-    G --> H["TargetProfitPredictor.jsx<br/>SVG price chart with<br/>target selling price line<br/>+ backtest simulation cards"]
-
-    style Regimes fill:#1a1e2e,stroke:#a855f7,stroke-width:2px
-```
-
----
-
-### Workflow 6: Geopolitical Macro Stress Simulator
-
-```mermaid
-flowchart TD
-    A["GET /api/probable-scenarios"] --> B["mcp_client.py<br/>get_probable_scenarios()"]
-    B --> C["5 Dynamic Day-to-Day<br/>Threat Scenarios"]
-
-    C --> C1["🛢️ Middle East<br/>Supply Crisis"]
-    C --> C2["💵 US Fed<br/>DXY Surge"]
-    C --> C3["🔧 Indo-Pacific<br/>Tech Embargo"]
-    C --> C4["🌧️ Monsoon<br/>Deficit"]
-    C --> C5["🚢 Red Sea<br/>Shipping Crunch"]
-
-    D["👤 User selects scenario<br/>or adjusts 7 shock sliders"] --> E["POST /api/stress-test"]
-
-    subgraph Sliders["7 Macro Shock Variables"]
-        S1["Brent Crude Spike %"]
-        S2["USD/INR Depreciation %"]
-        S3["India VIX Spike %"]
-        S4["FII Outflow (₹ Cr)"]
-        S5["RBI Rate Hike (bps)"]
-        S6["GDELT Escalation %"]
-        S7["DXY Rally %"]
-    end
-
-    E --> F["Stress Engine<br/>in main.py"]
-    F --> F1["Simulated Threat Score"]
-    F --> F2["Simulated Market Regime"]
-    F --> F3["Portfolio Impact %<br/>& VaR Increase"]
-    F --> F4["Vulnerable vs<br/>Resilient Sectors"]
-    F --> F5["Defensive Hedges<br/>GOLDBEES · BHARATBOND<br/>SILVERBEES · LIQUIDBEES"]
-    F --> F6["Asset Class<br/>Performance Heatmap"]
-
-    F1 & F2 & F3 & F4 & F5 & F6 --> G["StressTestResponse"]
-    G --> H["MacroSimulator.jsx<br/>Threat gauge · Regime label<br/>Sector comparison · Hedge cards<br/>Asset heatmap · Narrative"]
-
-    style Sliders fill:#1a1e2e,stroke:#ef4444,stroke-width:2px
-```
-
----
-
-### Workflow 7: Ticker Universe Management & On-Demand Sync
-
-```mermaid
-flowchart TD
-    A["👤 User opens<br/>Ticker Universe Manager tab"] --> B["GET /api/tickers"]
-    B --> C["get_all_tickers()<br/>Load nse_tickers.json"]
-    C --> D["TickerManager.jsx<br/>Editable data grid"]
-
-    D -->|"User edits cells"| E["Local state update"]
-    D -->|"User clicks Add Security"| F["Modal form:<br/>Symbol · Name · Sector<br/>Price · Category · Signal"]
-    D -->|"User clicks Delete"| G["Remove from local array"]
-
-    E & F & G -->|"User clicks Save"| H["POST /api/tickers"]
-    H --> I["save_ticker_dataset()<br/>Write nse_tickers.json<br/>+ reload_ticker_dataset()"]
-
-    D -->|"User clicks Sync"| J["POST /api/tickers/sync"]
-    J --> K["sync_top_tickers_dataset()"]
-    K --> L["ticker_sync_service.py<br/>build_top_tickers_dataset()"]
-
-    subgraph Generator["Universe Generator"]
-        L --> L1["Top 100 NSE Bluechips"]
-        L --> L2["Benchmark ETFs<br/>Nifty · Gold · Bank · Liquid"]
-        L --> L3["Emerging Sectors<br/>Green H2 · Semiconductors<br/>AI Cloud · EV · Space Tech<br/>Quick Commerce · REITs"]
-    end
-
-    L1 & L2 & L3 --> M["574 securities<br/>nse_tickers.json"]
-    M --> N["reload_ticker_dataset()<br/>Update in-memory maps"]
-
-    style Generator fill:#1a1e2e,stroke:#06b6d4,stroke-width:2px
-```
-
----
-
-## 📡 API Endpoints Reference
-
-| Method | Endpoint | Description | Request | Response |
-|---|---|---|---|---|
-| `GET` | `/` | API health check & metadata | — | Status JSON |
-| `GET` | `/api/macro-pulse` | Real-time macro threat feeds | — | `MacroPulseResponse` |
-| `GET` | `/api/probable-scenarios` | 5 dynamic geopolitical scenarios | — | `ProbableScenariosResponse` |
-| `POST` | `/api/parse-portfolio` | Normalize & analyze holdings | CSV/Excel `File` or JSON `Form` | `PortfolioDiagnostics` |
-| `POST` | `/api/recommend-inr` | HRP-optimized recommendations | `RecommendationRequest` | `RecommendationResponse` |
-| `POST` | `/api/target-selling-point` | Target selling prices & exit plan | `TargetSellingPointRequest` | `TargetSellingPointResponse` |
-| `GET` | `/api/ticker-history` | Historical OHLCV & backtest sims | Query: `ticker`, `period`, `target_profit_pct` | `TickerHistoryResponse` |
-| `POST` | `/api/stress-test` | Multi-variable macro shock test | `StressTestRequest` | `StressTestResponse` |
-| `POST` | `/api/broker-execute` | 1-click broker order payload | `BrokerExecuteRequest` | `BrokerExecuteResponse` |
-| `GET` | `/api/tickers` | Fetch raw ticker universe | — | Tickers JSON |
-| `POST` | `/api/tickers` | Save modified ticker dataset | `TickerSaveRequest` | Status JSON |
-| `POST` | `/api/tickers/sync` | On-demand NSE/BSE universe sync | — | `TickerSyncResponse` |
-
----
-
-## 🧮 Core Mathematical Models
-
-### Hierarchical Risk Parity (HRP)
-
-The HRP algorithm constructs a diversified portfolio via:
-
-1. **Correlation Distance Matrix:**
-
-$$D(i,j) = \sqrt{\frac{1}{2} \times (1 - \rho_{ij})}$$
-
-2. **Single-Linkage Hierarchical Clustering:** Applied to the condensed distance matrix via `scipy.cluster.hierarchy.linkage`
-
-3. **Recursive Bisection:** Allocates capital by splitting the dendrogram and assigning inverse-variance weights at each node
-
-### Portfolio Health Score
-
-$$\text{Health Score} = \max\left(1,\ \min\left(100,\ 50 \times (1 - \text{HHI}) + 20 \times \text{Sortino}_{norm} + 15 \times \text{Calmar}_{norm} + 15 \times (1 - \text{MaxDD})\right)\right)$$
-
-### Herfindahl-Hirschman Index (HHI)
-
-$$\text{HHI} = \sum_{i=1}^{n} w_i^2$$
-
-Where $w_i$ is the portfolio weight of holding $i$. HHI ranges from $1/n$ (perfectly diversified) to $1.0$ (single-stock concentrated).
-
-### Target Selling Price
-
-$$P_{target} = P_i \times \left(1 + \frac{R_{eff}}{100}\right)$$
-
-Where:
-$$R_{eff} = \underbrace{R_{CAGR}}_{\text{Fundamental Base}} + \underbrace{R_{macro}}_{\text{Geopolitical Premium}} + \underbrace{R_{sharpe}}_{\text{HRP Risk Uplift}}$$
-
-### Dynamic Capital Scaling
-
-| Capital (₹) | Recommendation Count |
-|---|---|
-| ≤ ₹50,000 | 6 positions |
-| ₹50K – ₹1 Lakh | 8 positions |
-| ₹1L – ₹5 Lakhs | 14 positions |
-| ₹5L – ₹10 Lakhs | 18 positions |
-| ₹10L – ₹25 Lakhs | 20 positions |
-| ≥ ₹25 Lakhs | 24 positions |
-
----
-
-## 🧪 Automated Testing & Verification
-
-### Test Suite Summary
-
-| Test File | Tests | Coverage Area |
+| Method | Endpoint | Purpose |
 |---|---|---|
-| `conftest.py` | 8 fixtures | TestClient, sample holdings (CSV/Excel/JSON), macro mocks |
-| `test_e2e_integration.py` | 20 tests | All 12 API endpoints, error handling, validation |
-| `test_quant_engine.py` | 15 tests | HRP, HHI, ticker normalization, target selling, horizon selection |
-| `test_mcp_client.py` | 3 tests | Threat score, yfinance fallback, singleton |
-| `test_stress_simulator.py` | 2 tests | Probable scenarios, multi-variable stress |
-| **Total** | **48 tests** | **100% endpoint & engine coverage** |
-
-### Running Tests
-
-```bash
-# Backend unit & integration tests
-cd backend
-python -m pytest tests/ -v
-# Output: 48 passed (100% pass rate)
-
-# Frontend production build verification
-cd frontend
-npm run build
-# Output: ✓ built in ~5s (0 errors)
-```
+| `GET` | `/api/macro-pulse` | Fetch live macro threat score, regime, and indicators |
+| `GET` | `/api/probable-scenarios` | Get 5 dynamically generated risk scenarios |
+| `POST` | `/api/parse-portfolio` | Upload & analyze an existing portfolio (CSV/Excel/JSON) |
+| `POST` | `/api/recommend-inr` | Generate optimized investment recommendations |
+| `POST` | `/api/target-selling-point` | Calculate target sell prices and exit dates |
+| `GET` | `/api/ticker-history` | Fetch historical prices and run backtests |
+| `POST` | `/api/stress-test` | Run macro shock simulation |
+| `POST` | `/api/broker-execute` | Queue orders for broker execution (Zerodha/Angel One/Upstox) |
+| `GET` | `/api/tickers` | Retrieve full ticker database |
+| `POST` | `/api/tickers` | Save modified ticker database |
+| `POST` | `/api/tickers/sync` | Sync latest NSE/BSE securities |
 
 ---
 
 ## ⚡ Quick Start & Execution
 
 ### Prerequisites
-- Python 3.10+
-- Node.js v18+ & npm
+- **Python 3.10+**
+- **Node.js v18+ & npm**
 
-### 1. Backend Setup (FastAPI)
+### 1. Backend Setup & Execution (FastAPI)
+
+Using `uv` to manage the local virtual environment (`.venv`) is recommended for fast, isolated, and reliable installation across all operating systems.
+
+```bash
+# 1. Navigate to backend directory
+cd backend
+
+# 2. Install uv (if not already installed)
+python -m pip install uv
+
+# 3. Create a local virtual environment (.venv)
+python -m uv venv .venv
+
+# 4. Install backend dependencies inside .venv
+python -m uv pip install -r requirements.txt --python .venv
+
+# 5. Run the FastAPI backend server
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# (On macOS/Linux, use: ./.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload)
+```
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **Interactive API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+#### Running Backend Tests
 ```bash
 cd backend
-pip install -r requirements.txt
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+.\.venv\Scripts\python.exe -m pytest tests/ -v
 ```
-API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### 2. Frontend Setup (React + Vite)
+---
+
+### 2. Frontend Setup & Execution (React + Vite)
+
 ```bash
+# 1. Navigate to frontend directory
 cd frontend
+
+# 2. Install Node dependencies (if not already installed)
 npm install
+
+# 3. Run the Vite React dev server
 npm run dev
 ```
-Web Dashboard: [http://localhost:5173](http://localhost:5173)
+
+> 💡 **Windows PowerShell Execution Policy Note:**
+> If PowerShell blocks `npm run dev` with a script execution error (`npm.ps1 cannot be loaded because running scripts is disabled`), run the command using `cmd`:
+> ```cmd
+> cmd /c npm run dev
+> ```
+> Or temporarily allow script execution in your PowerShell session:
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> npm run dev
+> ```
+
+- **Frontend Dashboard**: [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 🖥️ Frontend Navigation
+## 📜 License
 
-The dashboard provides 4 main tabs:
-
-| Tab | Component | Features |
-|---|---|---|
-| 📊 **Investment Recommendations** | `RecommendationPanel` + `DiagnosticsPanel` + `Sidebar` | HRP allocation cards, health score, sector analysis, CSV export |
-| 🎯 **Target Profit & Price History** | `TargetProfitPredictor` | Exit schedule, selling point calculator, SVG price charts, backtesting |
-| ⚡ **Macro Stress Simulator** | `MacroSimulator` | 5 World Monitor scenarios, 7 shock sliders, asset heatmap, hedges |
-| ⚙️ **Ticker Universe Manager** | `TickerManager` | Editable grid, add/delete securities, Top 100+500 sync |
-
----
-
-## 📦 Technology Stack
-
-### Backend
-| Package | Version | Purpose |
-|---|---|---|
-| FastAPI | 0.141 | REST API framework |
-| uvicorn | latest | ASGI server |
-| yfinance | latest | Live NSE/BSE market data |
-| pandas | latest | Data manipulation & CSV parsing |
-| numpy | latest | Numerical computation |
-| scipy | latest | HRP clustering & distance matrices |
-| pytest | latest | Testing framework |
-| openpyxl | latest | Excel file parsing |
-| httpx | latest | Async HTTP client |
-
-### Frontend
-| Package | Version | Purpose |
-|---|---|---|
-| React | 19.2 | UI framework |
-| Vite | 8.2 | Build tooling & dev server |
-| Recharts | 3.10 | SVG charts (sector donut, price history) |
-| Lucide React | 1.28 | Icon library |
-| Axios | 1.19 | HTTP client |
-
----
-
-## 📋 Pydantic Schema Reference (22 Models)
-
-<details>
-<summary>Click to expand full schema listing</summary>
-
-| Schema | Purpose |
-|---|---|
-| `HoldingItem` | Single portfolio holding with ticker, qty, prices, PnL |
-| `PortfolioParseRequest` | Raw holdings list input |
-| `PortfolioDiagnostics` | Full portfolio analysis output (health, HHI, risk metrics) |
-| `MacroPulseResponse` | Macro threat state (score, regime, indicators, factors) |
-| `RecommendationRequest` | Input for HRP recommendations (capital, risk, holdings) |
-| `RecommendationCard` | Individual stock recommendation with sell rate & rationale |
-| `RecommendationResponse` | Full recommendation output with summary |
-| `ProbableScenario` | Single geopolitical stress scenario |
-| `ProbableScenariosResponse` | 5 dynamic scenarios wrapper |
-| `StressTestRequest` | 7-variable macro shock inputs |
-| `StressTestResponse` | Simulated stress output (impact, regime, hedges) |
-| `BrokerExecuteRequest` | Broker order execution payload |
-| `BrokerExecuteResponse` | Execution confirmation & summary |
-| `TickerItem` | Single security in universe dataset |
-| `TickerSaveRequest` | Modified ticker list for saving |
-| `TickerSyncResponse` | Sync operation status |
-| `TargetSellingPointRequest` | Selling target inputs (capital, profit, horizon) |
-| `TargetSellingPointCard` | Per-stock exit plan (sell price, profit, difficulty) |
-| `TargetSellingPointResponse` | Full exit plan output |
-| `HistoricalPricePoint` | Single OHLCV data point |
-| `HistoricalScenarioSim` | Backtest result for a market regime |
-| `TickerHistoryResponse` | Price history + backtest simulations |
-
-</details>
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+This project is for educational and personal use. Not financial advice. Always consult a SEBI-registered advisor before investing.
