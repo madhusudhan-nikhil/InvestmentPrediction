@@ -1,4 +1,4 @@
-# 🇮🇳 BharatiQuant — Indian Investment Planning & World Monitor Macro Engine
+# BharatiQuant — Indian Investment Planning & World Monitor Macro Engine
 
 > **Your personal AI-powered investment co-pilot for the Indian stock market (NSE / BSE).**
 > BharatiQuant helps you decide *what* to buy, *how much* to invest, *when* to sell, and *what could go wrong* — all in plain ₹ Rupees with live market data.
