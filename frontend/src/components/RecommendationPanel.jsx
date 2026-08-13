@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Layers, ShieldCheck, ArrowUpRight, CheckCircle2, Flame, BarChart3, Download, Target, Calendar, TrendingUp, DollarSign, Clock } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Layers, ShieldCheck, ArrowUpRight, CheckCircle2, Flame, BarChart3, Download, Target, Calendar, TrendingUp } from 'lucide-react';
 
 export default function RecommendationPanel({ recommendationsData }) {
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [assetFilter, setAssetFilter] = useState("ALL"); // ALL | EQUITY | MUTUAL_FUND_ETF
   const [actionFilter, setActionFilter] = useState("ALL"); // ALL | SELL | KEEP | TOP_UP | BUY
 
-  if (!recommendationsData || !recommendationsData.recommendations) return null;
-
-  const recs = recommendationsData.recommendations;
-  const actionCounts = recommendationsData.action_counts || {};
+  const recs = recommendationsData?.recommendations || [];
+  const actionCounts = recommendationsData?.action_counts || {};
 
   const categories = [
     { id: "ALL", label: `All Categories (${recs.length})` },
@@ -19,15 +17,15 @@ export default function RecommendationPanel({ recommendationsData }) {
     { id: "Category D", label: "Category D: Macro Hedges" }
   ];
 
-  const equityCount = recs.filter(r => (r.asset_type || "EQUITY") === "EQUITY").length;
-  const mfEtfCount = recs.filter(r => r.asset_type === "MUTUAL_FUND_ETF").length;
+  const equityCount = useMemo(() => recs.filter(r => (r.asset_type || "EQUITY") === "EQUITY").length, [recs]);
+  const mfEtfCount = useMemo(() => recs.filter(r => r.asset_type === "MUTUAL_FUND_ETF").length, [recs]);
 
-  const filteredRecs = recs.filter(r => {
+  const filteredRecs = useMemo(() => recs.filter(r => {
     const matchesCat = activeCategory === "ALL" || r.category === activeCategory;
     const matchesAsset = assetFilter === "ALL" || (r.asset_type || "EQUITY") === assetFilter;
     const matchesAction = actionFilter === "ALL" || (r.action_type || "BUY") === actionFilter;
     return matchesCat && matchesAsset && matchesAction;
-  });
+  }), [recs, activeCategory, assetFilter, actionFilter]);
 
   const getBadgeStyle = (badgeColor) => {
     switch (badgeColor) {
@@ -48,6 +46,18 @@ export default function RecommendationPanel({ recommendationsData }) {
     }
   };
 
+  const freshCapital = recommendationsData?.fresh_capital_inr || recommendationsData?.total_capital_inr || 0;
+  const cashFromSales = recommendationsData?.cash_generated_from_sales_inr || 0;
+  const totalRebalanceCapital = recommendationsData?.total_rebalancing_capital_inr || recommendationsData?.total_capital_inr || 0;
+
+  const totalAllocatedInr = useMemo(() => recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0), [recs]);
+  const totalAllocatedPct = totalRebalanceCapital > 0 ? (totalAllocatedInr / totalRebalanceCapital) * 100 : 0;
+  // eslint-disable-next-line no-unused-vars
+  const totalSuggestedUnits = useMemo(() => recs.reduce((sum, r) => sum + (r.suggested_quantity || 0), 0), [recs]);
+  const weightedExpReturnPct = useMemo(() => totalAllocatedInr > 0 ? recs.reduce((sum, r) => sum + ((r.allocation_inr || 0) * (r.expected_return_pct || 0)), 0) / totalAllocatedInr : 0, [recs, totalAllocatedInr]);
+
+  if (!recommendationsData || !recommendationsData.recommendations) return null;
+
   const handleExportCSV = () => {
     const headers = "Action Type,Ticker,Instrument Name,Category,Current Rate (INR),Target Sell Rate (INR),Profit Per Share (INR),Total Stock Profit (INR),Action Qty,Freed Cash (INR),Allocation (INR),Allocation (%),Expected Return (%),Action Summary\n";
     const dataRows = recs.map(r => `"${r.action_type || 'BUY'}","${r.ticker}","${r.instrument_name}","${r.category}",${r.unit_price},${r.target_selling_price || (r.unit_price * (1 + r.expected_return_pct / 100)).toFixed(2)},${r.profit_per_share_inr || 0},${r.total_expected_stock_profit_inr || 0},${r.suggested_quantity || 0},${r.freed_cash_inr || 0},${r.allocation_inr || 0},${r.allocation_pct || 0},${r.expected_return_pct || 0},"${(r.action_summary || '').replace(/"/g, '""')}"`);
@@ -55,7 +65,6 @@ export default function RecommendationPanel({ recommendationsData }) {
     const freshCap = recommendationsData.fresh_capital_inr || recommendationsData.total_capital_inr || 0;
     const freedCashTotal = recommendationsData.cash_generated_from_sales_inr || 0;
     const totalRebalanceCap = recommendationsData.total_rebalancing_capital_inr || recommendationsData.total_capital_inr || 0;
-    const totalAllocatedInr = recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0);
 
     const totalRow = `"SUMMARY","REBALANCING PORTFOLIO TOTALS","ALL CATEGORIES","-","-","-","-","-","-",${freedCashTotal.toFixed(2)},${totalAllocatedInr.toFixed(2)},"100%","-","Fresh Capital: ₹${freshCap.toFixed(2)} + Freed Cash: ₹${freedCashTotal.toFixed(2)} = Total Rebalance: ₹${totalRebalanceCap.toFixed(2)}"`;
 
@@ -66,17 +75,6 @@ export default function RecommendationPanel({ recommendationsData }) {
     a.download = "BharatiQuant_Actionable_Rebalance_Execution_Plan.csv";
     a.click();
   };
-
-  const topAllocations = [...recs].filter(r => (r.allocation_inr || 0) > 0).sort((a, b) => b.allocation_inr - a.allocation_inr).slice(0, 3);
-
-  const freshCapital = recommendationsData.fresh_capital_inr || recommendationsData.total_capital_inr || 0;
-  const cashFromSales = recommendationsData.cash_generated_from_sales_inr || 0;
-  const totalRebalanceCapital = recommendationsData.total_rebalancing_capital_inr || recommendationsData.total_capital_inr || 0;
-
-  const totalAllocatedInr = recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0);
-  const totalAllocatedPct = totalRebalanceCapital > 0 ? (totalAllocatedInr / totalRebalanceCapital) * 100 : 0;
-  const totalSuggestedUnits = recs.reduce((sum, r) => sum + (r.suggested_quantity || 0), 0);
-  const weightedExpReturnPct = totalAllocatedInr > 0 ? recs.reduce((sum, r) => sum + ((r.allocation_inr || 0) * (r.expected_return_pct || 0)), 0) / totalAllocatedInr : 0;
 
   return (
     <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px' }}>
@@ -216,6 +214,7 @@ export default function RecommendationPanel({ recommendationsData }) {
         {filteredRecs.map((rec) => {
           const badgeStyle = getBadgeStyle(rec.category_badge_color);
           const actionBadgeStyle = getActionBadgeStyle(rec.action_type || 'BUY');
+          // eslint-disable-next-line no-unused-vars
           const isEquity = (rec.asset_type || "EQUITY") === "EQUITY";
           return (
             <div key={rec.id} style={{
