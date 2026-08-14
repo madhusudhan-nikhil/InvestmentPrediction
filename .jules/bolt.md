@@ -7,3 +7,6 @@
 ## 2024-05-19 - FastAPI Event Loop Blocking
 **Learning:** In the FastAPI backend, using synchronous data processing functions like `pandas.read_csv` and `pandas.read_excel` within an `async def` endpoint directly blocks the main asyncio event loop, causing severe latency degradation under load for all concurrent API requests.
 **Action:** Always offload synchronous blocking operations inside `async def` endpoints using `await asyncio.to_thread(func, *args)`.
+## 2025-02-20 - React Array Re-renders
+**Learning:** In the frontend, repeatedly running expensive array operations (e.g. `filter`, `reduce`) directly in the render path of components with large data inputs (like `RecommendationPanel` receiving hundreds of recommendations) can block the main thread and degrade rendering performance.
+**Action:** Always wrap heavy computations and derived state that iterate over large arrays in `React.useMemo()` so they are only recalculated when their specific dependencies change.
