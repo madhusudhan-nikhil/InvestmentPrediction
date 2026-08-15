@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layers, ShieldCheck, ArrowUpRight, CheckCircle2, Flame, BarChart3, Download, Target, Calendar, TrendingUp } from 'lucide-react';
+import { Layers, ShieldCheck, ArrowUpRight, CheckCircle2, BarChart3, Download } from 'lucide-react';
 
 export default function RecommendationPanel({ recommendationsData }) {
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [assetFilter, setAssetFilter] = useState("ALL"); // ALL | EQUITY | MUTUAL_FUND_ETF
   const [actionFilter, setActionFilter] = useState("ALL"); // ALL | SELL | KEEP | TOP_UP | BUY
 
-  const recs = recommendationsData?.recommendations || [];
-  const actionCounts = recommendationsData?.action_counts || {};
+  // ⚡ Bolt Optimization: Wrap fallback values in useMemo to prevent creating new reference
+  // on every render, which avoids downstream re-evaluations and re-renders.
+  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
+  const actionCounts = useMemo(() => recommendationsData?.action_counts || {}, [recommendationsData?.action_counts]);
 
   const categories = [
     { id: "ALL", label: `All Categories (${recs.length})` },

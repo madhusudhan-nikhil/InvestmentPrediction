@@ -1,6 +1,6 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { PieChart as PieIcon, ShieldAlert, Award, TrendingUp, AlertTriangle } from 'lucide-react';
+import { PieChart as PieIcon, TrendingUp } from 'lucide-react';
 
 const SECTOR_COLORS = {
   "Oil & Gas": "#f59e0b",

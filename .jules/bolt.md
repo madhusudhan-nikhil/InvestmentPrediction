@@ -10,3 +10,6 @@
 ## 2025-02-20 - React Array Re-renders
 **Learning:** In the frontend, repeatedly running expensive array operations (e.g. `filter`, `reduce`) directly in the render path of components with large data inputs (like `RecommendationPanel` receiving hundreds of recommendations) can block the main thread and degrade rendering performance.
 **Action:** Always wrap heavy computations and derived state that iterate over large arrays in `React.useMemo()` so they are only recalculated when their specific dependencies change.
+## 2026-08-15 - React useMemo dependency breaking memoization
+**Learning:** In React, passing derived arrays/objects directly into `useMemo` dependency arrays defeats memoization if the derived value is recreated on every render (e.g. `const arr = data || []`). This causes the `useMemo` hook to unnecessarily re-evaluate and can cause performance drops, especially for large arrays of data.
+**Action:** Memoize intermediate variables or directly use `useMemo` on the derived evaluation (e.g. `const arr = useMemo(() => data || [], [data])`) so the reference remains stable across renders.
