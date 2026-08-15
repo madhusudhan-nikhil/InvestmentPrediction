@@ -110,7 +110,7 @@ code, .font-mono {
 }
 
 /* CSS Keyframes for Spinning Icons */
-.animate-spin {
+.animate-spin, .spin-animation {
   animation: spin 1s linear infinite;
 }
 

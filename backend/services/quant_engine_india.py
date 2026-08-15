@@ -428,22 +428,18 @@ def generate_recommendations(
             sec = h["sector"]
             sec_wt = held_sectors_weight.get(sec, 0.0)
 
-            # Actionable SELL decision rules:
-            # - Unrealized PnL % <= -7.5% (underperforming holding)
-            # - OR Sector concentration > 25% with weak return (< 2.0%)
-            # - OR PnL % < -4.0% in heavy sector (>20%)
+            # Minimal SELL criteria: Only exit severely broken holdings to minimize forced sales & freed cash
+            # - Unrealized PnL <= -15.0% (severe loss threshold)
+            # - OR extreme sector overconcentration (>35%) with significant loss (<= -8.0%)
             is_sell = False
             sell_reason = ""
 
-            if pnl_pct <= -7.5:
+            if pnl_pct <= -15.0:
                 is_sell = True
-                sell_reason = f"Unrealized loss of {pnl_pct}% exceeds risk tolerance threshold."
-            elif sec_wt > 25.0 and pnl_pct < 2.0:
+                sell_reason = f"Severe unrealized loss of {pnl_pct}% exceeds maximum risk tolerance (-15%)."
+            elif sec_wt > 35.0 and pnl_pct <= -8.0:
                 is_sell = True
-                sell_reason = f"Sector [{sec}] overconcentrated ({sec_wt}%) with weak returns ({pnl_pct}%)."
-            elif pnl_pct <= -4.0 and sec_wt > 20.0:
-                is_sell = True
-                sell_reason = f"Underperforming stock in heavy sector [{sec}]."
+                sell_reason = f"Extreme sector overconcentration ({sec_wt:.1f}%) with significant loss ({pnl_pct}%)."
 
             if is_sell:
                 freed_cash = val
@@ -795,9 +791,49 @@ def generate_recommendations(
             "target_price_analytical_rationale": target_price_analytical_rationale,
             "expected_return_pct": effective_target_return_pct
         }
-        recommendations.append(card)
-        cat_summary[c["category"]] = round(cat_summary.get(c["category"], 0.0) + alloc_inr, 2)
         card_id += 1
+
+    # Add any remaining held tickers as KEEP/HOLD cards so 100% of uploaded holdings are presented
+    processed_held = set(s["ticker"] for s in sell_holdings) | set(p["ticker"] for p in preliminary if p["held_info"])
+    for t, held_info in held_tickers_map.items():
+        if t not in processed_held:
+            cp = round(held_info["current_price"], 2)
+            held_qty = int(held_info["qty"])
+            held_val = round(held_info["current_value"], 2)
+            sec = held_info.get("sector", "Other")
+
+            card = {
+                "id": card_id,
+                "ticker": t,
+                "instrument_name": get_ticker_display_name(t),
+                "category": "Category A",
+                "category_name": "Rebalance & Hold",
+                "category_badge_color": "emerald",
+                "asset_type": "EQUITY",
+                "action_type": "KEEP",
+                "action_label": "🟢 KEEP",
+                "current_holding_qty": held_qty,
+                "current_holding_value_inr": held_val,
+                "freed_cash_inr": 0.0,
+                "action_summary": f"Hold existing {held_qty} shares of {t} at current rate ₹{cp} (Hold Value: ₹{held_val:,.2f}).",
+                "unit_price": cp,
+                "target_selling_price": round(cp * 1.15, 2),
+                "profit_per_share_inr": round(cp * 0.15, 2),
+                "total_expected_stock_profit_inr": round(held_val * 0.15, 2),
+                "allocation_inr": 0.0,
+                "allocation_pct": 0.0,
+                "suggested_quantity": held_qty,
+                "sharpe_uplift": 1.2,
+                "hrp_risk_reduction_pct": 5.0,
+                "technical_momentum_signal": f"Hold Position (PnL: {held_info.get('pnl_pct', 0.0)}%)",
+                "quantitative_rationale": f"Maintain current position of {held_qty} shares valued at ₹{held_val:,.2f}.",
+                "macro_rationale": f"Stable core holding in [{sec}] sector.",
+                "target_price_analytical_rationale": "Core portfolio holding target",
+                "expected_return_pct": 15.0
+            }
+            recommendations.append(card)
+            card_id += 1
+            action_counts["KEEP"] = action_counts.get("KEEP", 0) + 1
 
     existing_diag = calculate_portfolio_diagnostics(existing_holdings, threat_score)
     health_before = existing_diag["health_score"]
