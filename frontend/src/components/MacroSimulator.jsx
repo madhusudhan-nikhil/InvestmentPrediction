@@ -1,8 +1,68 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, AlertTriangle, ShieldCheck, Flame, RefreshCw, Globe, Zap, ArrowUpRight, TrendingDown, Layers, Activity } from 'lucide-react';
+import { Sliders, AlertTriangle, ShieldCheck, Flame, RefreshCw, Globe, Zap, ArrowUpRight, TrendingDown, Layers, Activity, RotateCcw } from 'lucide-react';
 import axios from 'axios';
+import { formatINR, formatINRDenomination } from '../utils/formatters';
 
-export default function MacroSimulator({ holdings, API_BASE_URL }) {
+const HISTORICAL_CRISIS_PRESETS = [
+  {
+    id: 'lehman_2008',
+    title: '💥 2008 Lehman Crash',
+    desc: 'Severe liquidity crunch & foreign institutional dumping',
+    shocks: {
+      crude_oil_spike_pct: -35,
+      usd_inr_depreciation_pct: 12,
+      vix_spike_pct: 120,
+      fii_outflow_spike_cr: -8000,
+      rbi_rate_hike_bps: 0,
+      gdelt_escalation_pct: 40,
+      dxy_rally_pct: 10
+    }
+  },
+  {
+    id: 'covid_2020',
+    title: '🦠 2020 COVID Flash Crash',
+    desc: 'Record volatility spike & global lockdown shock',
+    shocks: {
+      crude_oil_spike_pct: -40,
+      usd_inr_depreciation_pct: 5,
+      vix_spike_pct: 180,
+      fii_outflow_spike_cr: -12000,
+      rbi_rate_hike_bps: -75,
+      gdelt_escalation_pct: 70,
+      dxy_rally_pct: 4
+    }
+  },
+  {
+    id: 'ukraine_2022',
+    title: '🛢️ 2022 Russia-Ukraine Spike',
+    desc: 'Brent crude spike & import inflation pressure',
+    shocks: {
+      crude_oil_spike_pct: 60,
+      usd_inr_depreciation_pct: 6,
+      vix_spike_pct: 40,
+      fii_outflow_spike_cr: -4500,
+      rbi_rate_hike_bps: 50,
+      gdelt_escalation_pct: 85,
+      dxy_rally_pct: 6
+    }
+  },
+  {
+    id: 'fed_tightening_2024',
+    title: '⚡ 2024 Fed Tightening & Middle East',
+    desc: 'High dollar index & elevated bond yields',
+    shocks: {
+      crude_oil_spike_pct: 25,
+      usd_inr_depreciation_pct: 3,
+      vix_spike_pct: 35,
+      fii_outflow_spike_cr: -4000,
+      rbi_rate_hike_bps: 25,
+      gdelt_escalation_pct: 50,
+      dxy_rally_pct: 5
+    }
+  }
+];
+
+export default function MacroSimulator({ holdings, availableCapital = 500000, API_BASE_URL }) {
   // Shock sliders state
   const [crudeSpike, setCrudeSpike] = useState(15);
   const [usdInrDep, setUsdInrDep] = useState(3);
@@ -30,7 +90,6 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
       const res = await axios.get(`${API_BASE_URL}/api/probable-scenarios`);
       if (res.data && res.data.scenarios) {
         setProbableScenarios(res.data.scenarios);
-        // Automatically select and run the top probable scenario on initial load
         if (res.data.scenarios.length > 0) {
           applyScenario(res.data.scenarios[0]);
         }
@@ -63,6 +122,20 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
       dxy_rally_pct: shocks.dxy_rally_pct || 0,
       scenario_id: scenario.id
     });
+  };
+
+  const applyHistoricalPreset = (preset) => {
+    setSelectedScenarioId(preset.id);
+    const s = preset.shocks;
+    setCrudeSpike(s.crude_oil_spike_pct);
+    setUsdInrDep(s.usd_inr_depreciation_pct);
+    setVixSpike(s.vix_spike_pct);
+    setFiiOutflow(s.fii_outflow_spike_cr);
+    setRbiRateHike(s.rbi_rate_hike_bps);
+    setGdeltEscalation(s.gdelt_escalation_pct);
+    setDxyRally(s.dxy_rally_pct);
+
+    runSimulationWithShocks(s);
   };
 
   const runCustomSimulation = () => {
@@ -102,6 +175,15 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
     setRbiRateHike(0);
     setGdeltEscalation(0);
     setDxyRally(0);
+    runSimulationWithShocks({
+      crude_oil_spike_pct: 0,
+      usd_inr_depreciation_pct: 0,
+      vix_spike_pct: 0,
+      fii_outflow_spike_cr: 0,
+      rbi_rate_hike_bps: 0,
+      gdelt_escalation_pct: 0,
+      dxy_rally_pct: 0
+    });
   };
 
   const getThreatColor = (score) => {
@@ -117,10 +199,67 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
     return { background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #3b82f6', color: '#60a5fa' };
   };
 
+  // Absolute Rupee Impact Math
+  const baselineCap = Number(availableCapital) || 500000;
+  const pctImpact = simResult?.estimated_portfolio_impact_pct || 0;
+  const simulatedPortfolioVal = baselineCap * (1 + pctImpact / 100);
+  const rupeeDelta = simulatedPortfolioVal - baselineCap;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* World Monitor 5 Dynamic Day-to-Day Probable Scenarios Section */}
+      {/* 1. Historical Crisis Shock Presets Banner */}
+      <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
+            <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Flame size={18} color="#f59e0b" />
+              Historical Crisis Stress Test Presets
+            </h3>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Simulate your portfolio's performance against actual historical black-swan crisis market shocks.
+            </p>
+          </div>
+          <button
+            onClick={resetAllSliders}
+            style={{
+              padding: '6px 12px', borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-color)',
+              color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}
+          >
+            <RotateCcw size={13} /> Reset Sliders to Neutral (0)
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+          {HISTORICAL_CRISIS_PRESETS.map(preset => {
+            const isSelected = selectedScenarioId === preset.id;
+            return (
+              <div
+                key={preset.id}
+                onClick={() => applyHistoricalPreset(preset)}
+                style={{
+                  padding: '12px 14px', borderRadius: '10px', cursor: 'pointer',
+                  background: isSelected ? 'rgba(245, 158, 11, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                  border: isSelected ? '1px solid #f59e0b' : '1px solid var(--border-color)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ fontSize: '13px', fontWeight: '700', color: isSelected ? '#fbbf24' : '#fff' }}>
+                  {preset.title}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '3px' }}>
+                  {preset.desc}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. World Monitor 5 Dynamic Day-to-Day Probable Scenarios Section */}
       <div className="glass-panel" style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85))' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
@@ -148,7 +287,7 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
         </div>
 
         {/* 5 Scenario Cards Carousel / Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
           {probableScenarios.map((sc, idx) => {
             const isSelected = selectedScenarioId === sc.id;
             const badgeStyle = getSeverityBadgeStyle(sc.severity_badge);
@@ -157,7 +296,7 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
                 key={sc.id || idx}
                 onClick={() => applyScenario(sc)}
                 style={{
-                  padding: '16px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s ease',
+                  padding: '14px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s ease',
                   background: isSelected ? 'rgba(6, 182, 212, 0.12)' : 'rgba(255, 255, 255, 0.03)',
                   border: isSelected ? '2px solid #06b6d4' : '1px solid var(--border-color)',
                   boxShadow: isSelected ? '0 0 15px rgba(6, 182, 212, 0.25)' : 'none',
@@ -206,15 +345,15 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
         </div>
       </div>
 
-      {/* Main Grid: Multi-Slider Control Panel + Dynamic Simulation Dashboard */}
+      {/* 3. Main Grid: Multi-Slider Control Panel + Dynamic Simulation Dashboard */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 380px) 1fr', gap: '24px' }}>
 
         {/* Multi-Parameter Shock Controls */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
               <Sliders size={18} color="#f59e0b" />
-              Shock Control Sliders
+              Custom Shock Sliders
             </h3>
             <button
               onClick={resetAllSliders}
@@ -225,21 +364,21 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
           </div>
 
           {/* 1. Brent Crude Oil Spike */}
-          <div className="glass-card" style={{ padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>🛢️ Brent Crude Spike:</span>
-              <span style={{ color: '#f59e0b', fontWeight: '800' }}>+{crudeSpike}%</span>
+          <div className="glass-card" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>🛢️ Brent Crude:</span>
+              <span style={{ color: crudeSpike >= 0 ? '#f59e0b' : '#34d399', fontWeight: '800' }}>{crudeSpike > 0 ? `+${crudeSpike}%` : `${crudeSpike}%`}</span>
             </div>
             <input
-              type="range" min="0" max="60" value={crudeSpike}
+              type="range" min="-50" max="60" value={crudeSpike}
               onChange={(e) => { setSelectedScenarioId(null); setCrudeSpike(Number(e.target.value)); }}
               style={{ width: '100%', accentColor: '#f59e0b' }}
             />
           </div>
 
           {/* 2. USD / INR Depreciation */}
-          <div className="glass-card" style={{ padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>
+          <div className="glass-card" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>💵 USD / INR Depreciation:</span>
               <span style={{ color: '#06b6d4', fontWeight: '800' }}>+{usdInrDep}%</span>
             </div>
@@ -251,23 +390,23 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
           </div>
 
           {/* 3. India VIX Volatility Spike */}
-          <div className="glass-card" style={{ padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>
+          <div className="glass-card" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>📈 India VIX Volatility:</span>
               <span style={{ color: '#a855f7', fontWeight: '800' }}>+{vixSpike}%</span>
             </div>
             <input
-              type="range" min="0" max="100" value={vixSpike}
+              type="range" min="0" max="180" value={vixSpike}
               onChange={(e) => { setSelectedScenarioId(null); setVixSpike(Number(e.target.value)); }}
               style={{ width: '100%', accentColor: '#a855f7' }}
             />
           </div>
 
           {/* 4. FII Net Sell Outflow */}
-          <div className="glass-card" style={{ padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>
+          <div className="glass-card" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>💸 FII Net Sell Outflow:</span>
-              <span style={{ color: '#f43f5e', fontWeight: '800' }}>₹{Math.abs(fiiOutflow).toLocaleString()} Cr</span>
+              <span style={{ color: '#f43f5e', fontWeight: '800' }}>-₹{Math.abs(fiiOutflow).toLocaleString('en-IN')} Cr</span>
             </div>
             <input
               type="range" min="-15000" max="0" step="500" value={fiiOutflow}
@@ -277,21 +416,21 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
           </div>
 
           {/* 5. RBI Repo Rate Shift */}
-          <div className="glass-card" style={{ padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>
+          <div className="glass-card" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>🏦 RBI Repo Rate Shift:</span>
-              <span style={{ color: '#eab308', fontWeight: '800' }}>+{rbiRateHike} bps</span>
+              <span style={{ color: '#eab308', fontWeight: '800' }}>{rbiRateHike >= 0 ? `+${rbiRateHike}` : rbiRateHike} bps</span>
             </div>
             <input
-              type="range" min="0" max="150" step="25" value={rbiRateHike}
+              type="range" min="-75" max="150" step="25" value={rbiRateHike}
               onChange={(e) => { setSelectedScenarioId(null); setRbiRateHike(Number(e.target.value)); }}
               style={{ width: '100%', accentColor: '#eab308' }}
             />
           </div>
 
           {/* 6. GDELT Geopolitical Conflict */}
-          <div className="glass-card" style={{ padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>
+          <div className="glass-card" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>🌐 GDELT Conflict Escalation:</span>
               <span style={{ color: '#ef4444', fontWeight: '800' }}>+{gdeltEscalation}%</span>
             </div>
@@ -303,9 +442,9 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
           </div>
 
           {/* 7. DXY Dollar Index Rally */}
-          <div className="glass-card" style={{ padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>💲 DXY Dollar Index Rally:</span>
+          <div className="glass-card" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>💲 DXY Dollar Index:</span>
               <span style={{ color: '#3b82f6', fontWeight: '800' }}>+{dxyRally}%</span>
             </div>
             <input
@@ -351,18 +490,21 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
                   </div>
                 </div>
 
-                {/* Estimated Portfolio Impact Card */}
-                <div className="glass-card" style={{ padding: '16px', borderLeft: `4px solid ${simResult.estimated_portfolio_impact_pct < 0 ? '#f43f5e' : '#10b981'}` }}>
+                {/* Estimated Portfolio Impact Card (Percentage + Absolute ₹) */}
+                <div className="glass-card" style={{ padding: '16px', borderLeft: `4px solid ${pctImpact < 0 ? '#f43f5e' : '#10b981'}` }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
-                    Estimated Portfolio Impact
+                    Simulated Rupee Impact
                   </span>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '6px' }}>
-                    <span style={{ fontSize: '28px', fontWeight: '900', color: simResult.estimated_portfolio_impact_pct < 0 ? '#f43f5e' : '#10b981' }}>
-                      {simResult.estimated_portfolio_impact_pct}%
+                    <span style={{ fontSize: '24px', fontWeight: '900', color: pctImpact < 0 ? '#f43f5e' : '#10b981' }}>
+                      {rupeeDelta >= 0 ? `+₹${formatINR(Math.round(rupeeDelta))}` : `-₹${formatINR(Math.round(Math.abs(rupeeDelta)))}`}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      (VaR Risk +{simResult.estimated_var_increase_pct}%)
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: pctImpact < 0 ? '#fb7185' : '#34d399' }}>
+                      ({pctImpact > 0 ? `+${pctImpact}%` : `${pctImpact}%`})
                     </span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>
+                    Portfolio: ₹{formatINR(baselineCap)} → ₹{formatINR(Math.round(simulatedPortfolioVal))}
                   </div>
                 </div>
 
@@ -383,7 +525,7 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
                   <Flame size={15} />
                   Quantitative Shock Rationale & Narrative
                 </div>
-                <p style={{ fontSize: '12px', color: 'var(--text-color)', lineHeight: '1.5' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-main)', lineHeight: '1.5' }}>
                   {simResult.scenario_narrative}
                 </p>
               </div>
@@ -391,7 +533,7 @@ export default function MacroSimulator({ holdings, API_BASE_URL }) {
               {/* Asset Class Impact Heatmap */}
               {simResult.asset_class_impact_breakdown && (
                 <div>
-                  <h4 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', color: '#fff' }}>
                     <Layers size={15} color="#a855f7" />
                     Asset Class Estimated Performance Under Shock
                   </h4>

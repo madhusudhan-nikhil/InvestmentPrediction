@@ -1,6 +1,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { PieChart as PieIcon, ShieldAlert, Award, TrendingUp, AlertTriangle } from 'lucide-react';
+import { PieChart as PieIcon, ShieldAlert, Award, TrendingUp, AlertTriangle, HelpCircle } from 'lucide-react';
+import { formatINR } from '../utils/formatters';
 
 const SECTOR_COLORS = {
   "Oil & Gas": "#f59e0b",
@@ -12,7 +13,7 @@ const SECTOR_COLORS = {
   "Other Equities": "#9ca3af"
 };
 
-export default function DiagnosticsPanel({ diagnostics }) {
+export default function DiagnosticsPanel({ diagnostics, onOpenGlossary }) {
   if (!diagnostics) return null;
 
   const sectorData = Object.entries(diagnostics.sector_breakdown || {}).map(([name, value]) => ({
@@ -30,10 +31,31 @@ export default function DiagnosticsPanel({ diagnostics }) {
 
   return (
     <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px' }}>
-      <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <PieIcon size={20} color="#10b981" />
-        Portfolio Diagnostics & Concentration Assessment
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+          <PieIcon size={20} color="#10b981" />
+          Portfolio Diagnostics & Concentration Assessment
+        </h2>
+        {onOpenGlossary && (
+          <button
+            onClick={onOpenGlossary}
+            type="button"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#818cf8',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <HelpCircle size={14} /> Metric Definitions
+          </button>
+        )}
+      </div>
 
       {/* Top Metrics Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
@@ -41,11 +63,11 @@ export default function DiagnosticsPanel({ diagnostics }) {
         <div className="glass-card" style={{ padding: '16px' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>TOTAL PORTFOLIO VALUE</div>
           <div style={{ fontSize: '22px', fontWeight: '800', color: '#fff', marginTop: '4px' }}>
-            ₹{diagnostics.total_value_inr.toLocaleString('en-IN')}
+            ₹{formatINR(diagnostics.total_value_inr)}
           </div>
           <div style={{ fontSize: '12px', marginTop: '4px', color: diagnostics.total_pnl_inr >= 0 ? '#10b981' : '#f43f5e', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <TrendingUp size={12} />
-            {diagnostics.total_pnl_inr >= 0 ? `+₹${diagnostics.total_pnl_inr.toLocaleString('en-IN')} (+${diagnostics.total_pnl_pct}%)` : `-₹${Math.abs(diagnostics.total_pnl_inr).toLocaleString('en-IN')} (${diagnostics.total_pnl_pct}%)`}
+            {diagnostics.total_pnl_inr >= 0 ? `+₹${formatINR(diagnostics.total_pnl_inr)} (+${diagnostics.total_pnl_pct}%)` : `-₹${formatINR(Math.abs(diagnostics.total_pnl_inr))} (${diagnostics.total_pnl_pct}%)`}
           </div>
         </div>
 
@@ -147,8 +169,8 @@ export default function DiagnosticsPanel({ diagnostics }) {
                   <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                     <td style={{ padding: '8px 6px', fontWeight: '700', color: '#34d399' }}>{item.ticker}</td>
                     <td style={{ padding: '8px 6px' }}>{item.quantity}</td>
-                    <td style={{ padding: '8px 6px' }}>₹{item.current_price}</td>
-                    <td style={{ padding: '8px 6px', fontWeight: '600' }}>₹{item.current_value_inr.toLocaleString('en-IN')}</td>
+                    <td style={{ padding: '8px 6px' }}>₹{formatINR(item.current_price)}</td>
+                    <td style={{ padding: '8px 6px', fontWeight: '600' }}>₹{formatINR(item.current_value_inr)}</td>
                     <td style={{ padding: '8px 6px', color: '#fbbf24', fontWeight: '700' }}>{item.weight_pct}%</td>
                   </tr>
                 ))}

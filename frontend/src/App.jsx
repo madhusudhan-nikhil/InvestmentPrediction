@@ -7,6 +7,11 @@ import RecommendationPanel from './components/RecommendationPanel';
 import MacroSimulator from './components/MacroSimulator';
 import TargetProfitPredictor from './components/TargetProfitPredictor';
 import SimplePortfolioPlanner from './components/SimplePortfolioPlanner';
+import ToastContainer from './components/ToastContainer';
+import QuantGlossaryModal from './components/QuantGlossaryModal';
+import ManualHoldingsModal from './components/ManualHoldingsModal';
+import BrokerExecutionModal from './components/BrokerExecutionModal';
+import { formatINR } from './utils/formatters';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -18,16 +23,36 @@ export default function App() {
   const [recommendations, setRecommendations] = useState(null);
 
   const [availableCapital, setAvailableCapital] = useState(500000); // Default ₹5 Lakhs
-  const [riskProfile, setRiskProfile] = useState("Aggressive"); // Always Aggressive by default
+  const [riskProfile, setRiskProfile] = useState("Aggressive");
   const [assetTypePreference, setAssetTypePreference] = useState("EQUITY_FOCUSED");
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [syncingTickers, setSyncingTickers] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState("dashboard"); // 'dashboard', 'predictor', or 'simulator'
 
-  // Initial load: fetch macro pulse
+  // Modals state
+  const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [isBrokerModalOpen, setIsBrokerModalOpen] = useState(false);
+
+  // Toast Notification state
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'info') => {
+    const id = Date.now() + Math.random().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
+
+  const dismissToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  // Initial load: fetch macro pulse & initial aggressive recommendations
   useEffect(() => {
     fetchMacroPulse();
+    fetchRecommendations(availableCapital, riskProfile, [], assetTypePreference);
   }, []);
 
   const fetchMacroPulse = async () => {
@@ -63,13 +88,22 @@ export default function App() {
     ];
     setHoldings(sample);
     await parseHoldingsList(sample);
-    await fetchRecommendations(availableCapital, "Aggressive", sample, assetTypePreference);
+    await fetchRecommendations(availableCapital, riskProfile, sample, assetTypePreference);
+    showToast("Loaded Sample Nifty 50 Holdings!", "success");
   };
 
-  const loadFreshCapitalRecommendations = async () => {
+  const handleClearPortfolio = async () => {
     setHoldings([]);
     setDiagnostics(null);
-    await fetchRecommendations(availableCapital, "Aggressive", [], assetTypePreference);
+    await fetchRecommendations(availableCapital, riskProfile, [], assetTypePreference);
+    showToast("Cleared portfolio holdings. Switched to pure fresh capital deployment.", "info");
+  };
+
+  const handleApplyManualHoldings = async (validHoldings) => {
+    setHoldings(validHoldings);
+    await parseHoldingsList(validHoldings);
+    await fetchRecommendations(availableCapital, riskProfile, validHoldings, assetTypePreference);
+    showToast(`Applied ${validHoldings.length} stocks to portfolio!`, "success");
   };
 
   const parseHoldingsList = async (holdingsList) => {
@@ -79,6 +113,7 @@ export default function App() {
       setDiagnostics(res.data);
     } catch (e) {
       console.error("Error parsing holdings:", e);
+      showToast(e.response?.data?.detail || "Failed to compute portfolio diagnostics", "error");
     } finally {
       setLoading(false);
     }
@@ -102,9 +137,10 @@ export default function App() {
       }));
       setHoldings(parsedHoldings);
 
-      await fetchRecommendations(availableCapital, "Aggressive", parsedHoldings, assetTypePreference);
+      await fetchRecommendations(availableCapital, riskProfile, parsedHoldings, assetTypePreference);
+      showToast(`Uploaded and normalized ${parsedHoldings.length} holdings from ${file.name}!`, "success");
     } catch (e) {
-      alert(e.response?.data?.detail || "Failed to parse portfolio file");
+      showToast(e.response?.data?.detail || "Failed to parse portfolio file. Check format.", "error");
     } finally {
       setLoading(false);
     }
@@ -115,36 +151,49 @@ export default function App() {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/recommend-inr`, {
         available_capital_inr: capital,
-        risk_profile: "Aggressive",
+        risk_profile: risk,
         asset_type_preference: assetPref,
         holdings: currentHoldings
       });
       setRecommendations(res.data);
     } catch (e) {
       console.error("Error fetching recommendations:", e);
+      showToast("Failed to fetch HRP recommendations. Using fallback matrix.", "warning");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRunOptimization = () => {
-    fetchRecommendations(availableCapital, "Aggressive", holdings, assetTypePreference);
-  };
-
-  const handleSyncTickers = async () => {
-    setSyncingTickers(true);
-    try {
-      await axios.post(`${API_BASE_URL}/api/tickers/sync`);
-    } catch (e) {
-      console.error("Error syncing tickers:", e);
-    } finally {
-      setSyncingTickers(false);
-    }
+    fetchRecommendations(availableCapital, riskProfile, holdings, assetTypePreference);
+    showToast("Recomputed quantitative portfolio plan!", "success");
   };
 
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '20px' }}>
       
+      {/* Toast Notification Container */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* Quant Glossary Modal */}
+      <QuantGlossaryModal isOpen={isGlossaryOpen} onClose={() => setIsGlossaryOpen(false)} />
+
+      {/* Manual Holdings Entry Modal */}
+      <ManualHoldingsModal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        currentHoldings={holdings}
+        onApplyHoldings={handleApplyManualHoldings}
+      />
+
+      {/* 1-Click Broker Execution Modal */}
+      <BrokerExecutionModal
+        isOpen={isBrokerModalOpen}
+        onClose={() => setIsBrokerModalOpen(false)}
+        recommendationsData={recommendations}
+        onSuccessToast={(msg) => showToast(msg, "success")}
+      />
+
       {/* App Header & Interface Mode Switcher */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -165,59 +214,95 @@ export default function App() {
               BharatiQuant Investment Predictor
             </h1>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              NSE/BSE Indian Quantitative HRP Engine
+              NSE / BSE Indian Quantitative HRP & World Monitor Macro Engine
             </div>
           </div>
         </div>
 
         {/* View Mode Toggle Switch */}
-        <div style={{
-          display: 'flex', background: 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid var(--border-color)', borderRadius: '12px', padding: '4px'
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
-            onClick={() => setViewMode("simple")}
+            onClick={() => setIsGlossaryOpen(true)}
             style={{
-              padding: '8px 18px',
+              padding: '8px 14px',
               borderRadius: '9px',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: '700',
               cursor: 'pointer',
-              border: 'none',
-              transition: 'all 0.2s',
-              background: viewMode === 'simple' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
-              color: viewMode === 'simple' ? '#fff' : 'var(--text-muted)',
-              boxShadow: viewMode === 'simple' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none'
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              background: 'rgba(16, 185, 129, 0.12)',
+              color: '#34d399',
+              transition: 'all 0.2s'
             }}
           >
-            ⚡ Simple View
+            📖 Quant Glossary
           </button>
-          <button
-            onClick={() => setViewMode("advanced")}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '9px',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              border: 'none',
-              transition: 'all 0.2s',
-              background: viewMode === 'advanced' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
-              color: viewMode === 'advanced' ? '#818cf8' : 'var(--text-muted)',
-              boxShadow: viewMode === 'advanced' ? '0 2px 8px rgba(99, 102, 241, 0.3)' : 'none'
-            }}
-          >
-            📊 Advanced View
-          </button>
+
+          <div style={{
+            display: 'flex', background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid var(--border-color)', borderRadius: '12px', padding: '4px'
+          }}>
+            <button
+              onClick={() => setViewMode("simple")}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '9px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                border: 'none',
+                transition: 'all 0.2s',
+                background: viewMode === 'simple' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
+                color: viewMode === 'simple' ? '#fff' : 'var(--text-muted)',
+                boxShadow: viewMode === 'simple' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none'
+              }}
+            >
+              ⚡ Simple View
+            </button>
+            <button
+              onClick={() => setViewMode("advanced")}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '9px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                border: 'none',
+                transition: 'all 0.2s',
+                background: viewMode === 'advanced' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                color: viewMode === 'advanced' ? '#818cf8' : 'var(--text-muted)',
+                boxShadow: viewMode === 'advanced' ? '0 2px 8px rgba(99, 102, 241, 0.3)' : 'none'
+              }}
+            >
+              📊 Advanced View
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* SIMPLE VIEW MODE (DEFAULT) */}
+      {/* SIMPLE VIEW MODE */}
       {viewMode === 'simple' && (
         <SimplePortfolioPlanner
-          onHoldingsChange={setHoldings}
-          onDiagnosticsChange={setDiagnostics}
-          onRecommendationsChange={setRecommendations}
+          availableCapital={availableCapital}
+          setAvailableCapital={setAvailableCapital}
+          riskProfile={riskProfile}
+          setRiskProfile={setRiskProfile}
+          assetTypePreference={assetTypePreference}
+          setAssetTypePreference={setAssetTypePreference}
+          holdings={holdings}
+          setHoldings={setHoldings}
+          diagnostics={diagnostics}
+          recommendations={recommendations}
+          macroPulse={macroPulse}
+          loading={loading}
+          onUploadCSV={handleUploadCSV}
+          onLoadSamplePortfolio={loadSamplePortfolio}
+          onRunOptimization={handleRunOptimization}
+          onOpenManualModal={() => setIsManualModalOpen(true)}
+          onClearPortfolio={handleClearPortfolio}
+          onOpenBrokerModal={() => setIsBrokerModalOpen(true)}
+          onOpenGlossary={() => setIsGlossaryOpen(true)}
+          onShowToast={showToast}
         />
       )}
 
@@ -229,8 +314,7 @@ export default function App() {
             macroData={macroPulse}
             loading={loading}
             onRefresh={fetchMacroPulse}
-            onSyncTickers={handleSyncTickers}
-            syncingTickers={syncingTickers}
+            onOpenGlossary={() => setIsGlossaryOpen(true)}
           />
 
           {/* Main Navigation Tabs Bar */}
@@ -289,28 +373,46 @@ export default function App() {
                 setAssetTypePreference={setAssetTypePreference}
                 onUploadCSV={handleUploadCSV}
                 onLoadSamplePortfolio={loadSamplePortfolio}
-                onGenerateFreshCapital={loadFreshCapitalRecommendations}
+                onOpenManualModal={() => setIsManualModalOpen(true)}
+                onClearPortfolio={handleClearPortfolio}
+                onOpenGlossary={() => setIsGlossaryOpen(true)}
+                holdingsCount={holdings.length}
                 onRunOptimization={handleRunOptimization}
                 loading={loading}
               />
 
               {/* Right Dashboard Panels */}
               <main style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <RecommendationPanel recommendationsData={recommendations} />
-                <DiagnosticsPanel diagnostics={diagnostics} />
+                <RecommendationPanel 
+                  recommendationsData={recommendations}
+                  loading={loading}
+                  onOpenBrokerModal={() => setIsBrokerModalOpen(true)}
+                  onShowToast={showToast}
+                />
+                <DiagnosticsPanel 
+                  diagnostics={diagnostics}
+                  onOpenGlossary={() => setIsGlossaryOpen(true)}
+                />
               </main>
             </div>
           )}
 
           {activeMainTab === 'predictor' && (
             <div style={{ width: '100%' }}>
-              <TargetProfitPredictor recommendationsData={recommendations} />
+              <TargetProfitPredictor 
+                recommendationsData={recommendations} 
+                onShowToast={showToast}
+              />
             </div>
           )}
 
           {activeMainTab === 'simulator' && (
             <div style={{ width: '100%' }}>
-              <MacroSimulator holdings={holdings} API_BASE_URL={API_BASE_URL} />
+              <MacroSimulator 
+                holdings={holdings} 
+                availableCapital={availableCapital}
+                API_BASE_URL={API_BASE_URL} 
+              />
             </div>
           )}
         </>

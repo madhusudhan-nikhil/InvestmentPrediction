@@ -76,19 +76,19 @@ export default function TopBar({ macroData, loading, onRefresh, onSyncTickers, s
             Sync Pulse
           </button>
 
-          <button
-            onClick={onSyncTickers}
-            disabled={syncingTickers}
-            style={{
-              background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.3)',
-              color: '#c084fc', padding: '10px 14px', borderRadius: '10px',
-              cursor: syncingTickers ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-              fontSize: '13px', fontWeight: '500', transition: 'all 0.2s'
-            }}
-          >
-            <Database size={14} className={syncingTickers ? "animate-spin" : ""} />
-            {syncingTickers ? 'Syncing...' : 'Sync Tickers'}
-          </button>
+          {onOpenGlossary && (
+            <button
+              onClick={onOpenGlossary}
+              style={{
+                background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#34d399', padding: '10px 14px', borderRadius: '10px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '13px', fontWeight: '600', transition: 'all 0.2s'
+              }}
+            >
+              📖 Quant Glossary
+            </button>
+          )}
         </div>
       </div>
 
