@@ -791,6 +791,8 @@ def generate_recommendations(
             "target_price_analytical_rationale": target_price_analytical_rationale,
             "expected_return_pct": effective_target_return_pct
         }
+        recommendations.append(card)
+        cat_summary[c["category"]] = cat_summary.get(c["category"], 0.0) + (alloc_inr if alloc_inr > 0 else cp)
         card_id += 1
 
     # Add any remaining held tickers as KEEP/HOLD cards so 100% of uploaded holdings are presented
