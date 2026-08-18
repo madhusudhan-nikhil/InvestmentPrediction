@@ -13,3 +13,6 @@
 ## 2026-08-15 - React useMemo dependency breaking memoization
 **Learning:** In React, passing derived arrays/objects directly into `useMemo` dependency arrays defeats memoization if the derived value is recreated on every render (e.g. `const arr = data || []`). This causes the `useMemo` hook to unnecessarily re-evaluate and can cause performance drops, especially for large arrays of data.
 **Action:** Memoize intermediate variables or directly use `useMemo` on the derived evaluation (e.g. `const arr = useMemo(() => data || [], [data])`) so the reference remains stable across renders.
+## 2024-08-14 - React Array Re-renders (TickerManager Filtering)
+**Learning:** In the frontend, iterating through large arrays (up to 600 tickers in the universe) multiple times on every render for filtering inside `TickerManager` can cause noticeable UI latency during text input (search).
+**Action:** Wrapped the `filteredTickers` array calculation with `React.useMemo()` and hoisted the `search.toLowerCase()` call to prevent redundant string allocations.
