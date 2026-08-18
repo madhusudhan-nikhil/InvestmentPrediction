@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { PieChart as PieIcon, ShieldAlert, Award, TrendingUp, AlertTriangle } from 'lucide-react';
 
@@ -15,10 +15,15 @@ const SECTOR_COLORS = {
 export default function DiagnosticsPanel({ diagnostics }) {
   if (!diagnostics) return null;
 
-  const sectorData = Object.entries(diagnostics.sector_breakdown || {}).map(([name, value]) => ({
-    name,
-    value
-  }));
+  // ⚡ Bolt Optimization: Memoize the sectorData array calculation.
+  // This prevents the Recharts <PieChart> component from seeing a new array reference on every render,
+  // which avoids triggering expensive chart recalculations and unnecessary DOM updates.
+  const sectorData = useMemo(() => {
+    return Object.entries(diagnostics.sector_breakdown || {}).map(([name, value]) => ({
+      name,
+      value
+    }));
+  }, [diagnostics.sector_breakdown]);
 
   const getHealthBadge = (score) => {
     if (score >= 80) return { label: 'Optimal Health', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' };
