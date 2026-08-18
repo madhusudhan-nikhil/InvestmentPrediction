@@ -10,3 +10,6 @@
 ## 2025-02-20 - React Array Re-renders
 **Learning:** In the frontend, repeatedly running expensive array operations (e.g. `filter`, `reduce`) directly in the render path of components with large data inputs (like `RecommendationPanel` receiving hundreds of recommendations) can block the main thread and degrade rendering performance.
 **Action:** Always wrap heavy computations and derived state that iterate over large arrays in `React.useMemo()` so they are only recalculated when their specific dependencies change.
+## 2024-08-14 - React Array Re-renders (TickerManager Filtering)
+**Learning:** In the frontend, iterating through large arrays (up to 600 tickers in the universe) multiple times on every render for filtering inside `TickerManager` can cause noticeable UI latency during text input (search).
+**Action:** Wrapped the `filteredTickers` array calculation with `React.useMemo()` and hoisted the `search.toLowerCase()` call to prevent redundant string allocations.

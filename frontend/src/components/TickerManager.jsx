@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -149,24 +149,28 @@ export default function TickerManager() {
     setTimeout(() => setStatusMessage(null), 5000);
   };
 
-  // Filtering
-  const filteredTickers = tickers.filter((item) => {
-    const matchesSearch =
-      item.ticker.toLowerCase().includes(search.toLowerCase()) ||
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.sector.toLowerCase().includes(search.toLowerCase());
+  // ⚡ Bolt Optimization: Memoize filtered tickers to prevent expensive re-evaluations on every render
+  // Also hoisted search.toLowerCase() to avoid redundant string allocations in the filter loop
+  const filteredTickers = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return tickers.filter((item) => {
+      const matchesSearch =
+        item.ticker.toLowerCase().includes(searchLower) ||
+        item.name.toLowerCase().includes(searchLower) ||
+        item.sector.toLowerCase().includes(searchLower);
 
-    const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
+      const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
 
-    const matchesExchange =
-      selectedExchange === "All"
-        ? true
-        : selectedExchange === "NSE"
-        ? item.ticker.endsWith(".NS")
-        : item.ticker.endsWith(".BO");
+      const matchesExchange =
+        selectedExchange === "All"
+          ? true
+          : selectedExchange === "NSE"
+          ? item.ticker.endsWith(".NS")
+          : item.ticker.endsWith(".BO");
 
-    return matchesSearch && matchesCategory && matchesExchange;
-  });
+      return matchesSearch && matchesCategory && matchesExchange;
+    });
+  }, [tickers, search, selectedCategory, selectedExchange]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
