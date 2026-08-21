@@ -85,25 +85,27 @@ export default function SimplePortfolioPlanner({
   const totalRebalanceCap = recommendations?.total_rebalancing_capital_inr || (freshCap + cashFromSales);
   const healthScore = diagnostics?.portfolio_health_score || 85;
 
-  const actionCounts = recommendations?.action_counts || {
+  const actionCounts = useMemo(() => recommendations?.action_counts || {
     SELL: recsList.filter(r => r.action_type === 'SELL').length,
     KEEP: recsList.filter(r => r.action_type === 'KEEP').length,
     TOP_UP: recsList.filter(r => r.action_type === 'TOP_UP').length,
     BUY: recsList.filter(r => r.action_type === 'BUY').length,
-  };
+  }, [recommendations?.action_counts, recsList]);
 
-  const filteredRecs = [...recsList].filter(r => {
-    if (actionFilter === "ALL") return true;
-    return (r.action_type || "BUY") === actionFilter;
-  }).sort((a, b) => {
-    let valA = a[sortField] ?? 0;
-    let valB = b[sortField] ?? 0;
-    if (typeof valA === 'string') valA = valA.toLowerCase();
-    if (typeof valB === 'string') valB = valB.toLowerCase();
-    if (valA < valB) return sortAsc ? -1 : 1;
-    if (valA > valB) return sortAsc ? 1 : -1;
-    return 0;
-  });
+  const filteredRecs = useMemo(() => {
+    return [...recsList].filter(r => {
+      if (actionFilter === "ALL") return true;
+      return (r.action_type || "BUY") === actionFilter;
+    }).sort((a, b) => {
+      let valA = a[sortField] ?? 0;
+      let valB = b[sortField] ?? 0;
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+      if (valA < valB) return sortAsc ? -1 : 1;
+      if (valA > valB) return sortAsc ? 1 : -1;
+      return 0;
+    });
+  }, [recsList, actionFilter, sortField, sortAsc]);
 
   const getActionBadgeStyle = (actionType) => {
     switch (actionType) {
