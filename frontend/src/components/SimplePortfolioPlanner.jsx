@@ -87,8 +87,6 @@ export default function SimplePortfolioPlanner({
   const totalRebalanceCap = recommendations?.total_rebalancing_capital_inr || (freshCap + cashFromSales);
   const healthScore = diagnostics?.portfolio_health_score || 85;
 
-  // ⚡ Bolt Optimization: Memoize expensive array operations (filter/length) to prevent
-  // redundant calculations blocking the main thread during simple re-renders.
   const actionCounts = useMemo(() => recommendations?.action_counts || {
     SELL: recsList.filter(r => r.action_type === 'SELL').length,
     KEEP: recsList.filter(r => r.action_type === 'KEEP').length,
@@ -96,8 +94,6 @@ export default function SimplePortfolioPlanner({
     BUY: recsList.filter(r => r.action_type === 'BUY').length,
   }, [recommendations?.action_counts, recsList]);
 
-  // ⚡ Bolt Optimization: Wrap expensive array filtering and sorting logic in useMemo
-  // so it is only recalculated when dependencies change.
   const filteredRecs = useMemo(() => {
     return [...recsList].filter(r => {
       if (actionFilter === "ALL") return true;
