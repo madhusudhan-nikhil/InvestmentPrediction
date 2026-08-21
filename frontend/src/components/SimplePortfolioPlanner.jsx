@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Upload, FileText, CheckCircle2, TrendingUp, PieChart, 
   BarChart3, Download, Zap, AlertCircle, ArrowUpRight, 
@@ -78,8 +78,10 @@ export default function SimplePortfolioPlanner({
     if (onShowToast) onShowToast("Exported allocation plan to CSV!");
   };
 
+  // ⚡ Bolt Optimization: Memoize the inline fallback array reference to prevent
+  // triggering downstream useEffects/useMemos on every render if the parent passes undefined.
   // Helper formatting values
-  const recsList = recommendations?.recommendations || [];
+  const recsList = useMemo(() => recommendations?.recommendations || [], [recommendations?.recommendations]);
   const freshCap = recommendations?.fresh_capital_inr || availableCapital || 0;
   const cashFromSales = recommendations?.cash_generated_from_sales_inr || 0;
   const totalRebalanceCap = recommendations?.total_rebalancing_capital_inr || (freshCap + cashFromSales);

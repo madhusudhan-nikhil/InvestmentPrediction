@@ -13,3 +13,6 @@
 ## 2024-08-14 - React Array Re-renders (TickerManager Filtering)
 **Learning:** In the frontend, iterating through large arrays (up to 600 tickers in the universe) multiple times on every render for filtering inside `TickerManager` can cause noticeable UI latency during text input (search).
 **Action:** Wrapped the `filteredTickers` array calculation with `React.useMemo()` and hoisted the `search.toLowerCase()` call to prevent redundant string allocations.
+## 2024-08-21 - React Inline Fallback References
+**Learning:** In the frontend, using inline fallback values (e.g., `data || []` or `data || {}`) outside of `useMemo` when they are used as dependencies recreates references on every render, triggering unnecessary downstream re-evaluations and rendering bottlenecks in components with large datasets.
+**Action:** Always wrap the fallback assignment directly in `useMemo` (e.g., `const arr = useMemo(() => data || [], [data])`) to preserve referential equality when the parent passes undefined.
