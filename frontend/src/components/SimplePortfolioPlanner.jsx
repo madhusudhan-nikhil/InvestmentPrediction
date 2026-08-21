@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Upload, FileText, CheckCircle2, TrendingUp, PieChart, 
   BarChart3, Download, Zap, AlertCircle, ArrowUpRight, 
@@ -78,32 +78,40 @@ export default function SimplePortfolioPlanner({
     if (onShowToast) onShowToast("Exported allocation plan to CSV!");
   };
 
+  // ⚡ Bolt Optimization: Memoize the inline fallback array reference to prevent
+  // triggering downstream useEffects/useMemos on every render if the parent passes undefined.
   // Helper formatting values
-  const recsList = recommendations?.recommendations || [];
+  const recsList = useMemo(() => recommendations?.recommendations || [], [recommendations?.recommendations]);
   const freshCap = recommendations?.fresh_capital_inr || availableCapital || 0;
   const cashFromSales = recommendations?.cash_generated_from_sales_inr || 0;
   const totalRebalanceCap = recommendations?.total_rebalancing_capital_inr || (freshCap + cashFromSales);
   const healthScore = diagnostics?.portfolio_health_score || 85;
 
-  const actionCounts = recommendations?.action_counts || {
+  // ⚡ Bolt Optimization: Memoize expensive array operations (filter/length) to prevent
+  // redundant calculations blocking the main thread during simple re-renders.
+  const actionCounts = useMemo(() => recommendations?.action_counts || {
     SELL: recsList.filter(r => r.action_type === 'SELL').length,
     KEEP: recsList.filter(r => r.action_type === 'KEEP').length,
     TOP_UP: recsList.filter(r => r.action_type === 'TOP_UP').length,
     BUY: recsList.filter(r => r.action_type === 'BUY').length,
-  };
+  }, [recommendations?.action_counts, recsList]);
 
-  const filteredRecs = [...recsList].filter(r => {
-    if (actionFilter === "ALL") return true;
-    return (r.action_type || "BUY") === actionFilter;
-  }).sort((a, b) => {
-    let valA = a[sortField] ?? 0;
-    let valB = b[sortField] ?? 0;
-    if (typeof valA === 'string') valA = valA.toLowerCase();
-    if (typeof valB === 'string') valB = valB.toLowerCase();
-    if (valA < valB) return sortAsc ? -1 : 1;
-    if (valA > valB) return sortAsc ? 1 : -1;
-    return 0;
-  });
+  // ⚡ Bolt Optimization: Wrap expensive array filtering and sorting logic in useMemo
+  // so it is only recalculated when dependencies change.
+  const filteredRecs = useMemo(() => {
+    return [...recsList].filter(r => {
+      if (actionFilter === "ALL") return true;
+      return (r.action_type || "BUY") === actionFilter;
+    }).sort((a, b) => {
+      let valA = a[sortField] ?? 0;
+      let valB = b[sortField] ?? 0;
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+      if (valA < valB) return sortAsc ? -1 : 1;
+      if (valA > valB) return sortAsc ? 1 : -1;
+      return 0;
+    });
+  }, [recsList, actionFilter, sortField, sortAsc]);
 
   const getActionBadgeStyle = (actionType) => {
     switch (actionType) {

@@ -39,8 +39,10 @@ export default function RecommendationPanel({
     );
   }
 
-  const recs = recommendationsData?.recommendations || [];
-  const actionCounts = recommendationsData?.action_counts || {};
+  // ⚡ Bolt Optimization: Memoize the inline fallback array/object references to prevent
+  // triggering downstream useEffects/useMemos on every render if the parent passes undefined.
+  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
+  const actionCounts = useMemo(() => recommendationsData?.action_counts || {}, [recommendationsData?.action_counts]);
 
   const categories = [
     { id: "ALL", label: `All Categories (${recs.length})` },
