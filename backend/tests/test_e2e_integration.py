@@ -258,18 +258,25 @@ def test_get_tickers_endpoint(test_client):
     assert data["total_tickers"] > 0
     assert len(data["tickers"]) == data["total_tickers"]
 
-def test_save_and_sync_tickers_endpoint(test_client):
+def test_save_and_sync_tickers_endpoint(test_client, monkeypatch):
+    monkeypatch.setenv("ADMIN_TOKEN", "test_admin_secret")
+    headers = {"x-admin-token": "test_admin_secret"}
+
     res = test_client.get("/api/tickers")
     full_tickers = res.json()["tickers"]
 
-    save_res = test_client.post("/api/tickers", json={"tickers": full_tickers[:50]})
+    # Test unauthorized access
+    unauth_res = test_client.post("/api/tickers", json={"tickers": full_tickers[:50]})
+    assert unauth_res.status_code == 401
+
+    save_res = test_client.post("/api/tickers", json={"tickers": full_tickers[:50]}, headers=headers)
     assert save_res.status_code == 200
     assert save_res.json()["total_tickers"] == 50
 
     # Restore full dataset
-    test_client.post("/api/tickers", json={"tickers": full_tickers})
+    test_client.post("/api/tickers", json={"tickers": full_tickers}, headers=headers)
 
-    sync_res = test_client.post("/api/tickers/sync")
+    sync_res = test_client.post("/api/tickers/sync", headers=headers)
     assert sync_res.status_code == 200
     assert sync_res.json()["status"] == "SUCCESS"
     assert sync_res.json()["total_tickers"] >= 50
