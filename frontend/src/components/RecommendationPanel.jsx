@@ -19,27 +19,7 @@ export default function RecommendationPanel({
   const [sortField, setSortField] = useState("allocation_inr");
   const [sortAsc, setSortAsc] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <div className="skeleton-box" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
-          <div className="skeleton-box" style={{ width: '220px', height: '22px' }} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '16px' }}>
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="skeleton-box" style={{ width: '120px', height: '20px' }} />
-              <div className="skeleton-box" style={{ width: '100%', height: '50px' }} />
-              <div className="skeleton-box" style={{ width: '80%', height: '16px' }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const recs = recommendationsData?.recommendations || [];
+  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
   const actionCounts = recommendationsData?.action_counts || {};
 
   const categories = [
@@ -70,6 +50,42 @@ export default function RecommendationPanel({
     });
   }, [recs, activeCategory, assetFilter, actionFilter, sortField, sortAsc]);
 
+  const freshCapital = recommendationsData?.fresh_capital_inr || recommendationsData?.total_capital_inr || 0;
+  const cashFromSales = recommendationsData?.cash_generated_from_sales_inr || 0;
+  const totalRebalanceCapital = recommendationsData?.total_rebalancing_capital_inr || recommendationsData?.total_capital_inr || 0;
+
+  const totalAllocatedInr = useMemo(() => recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0), [recs]);
+  const totalAllocatedPct = totalRebalanceCapital > 0 ? (totalAllocatedInr / totalRebalanceCapital) * 100 : 0;
+  // eslint-disable-next-line no-unused-vars
+  const totalSuggestedUnits = useMemo(() => recs.reduce((sum, r) => sum + (r.suggested_quantity || 0), 0), [recs]);
+  const weightedExpReturnPct = useMemo(() => totalAllocatedInr > 0 ? recs.reduce((sum, r) => sum + ((r.allocation_inr || 0) * (r.expected_return_pct || 0)), 0) / totalAllocatedInr : 0, [recs, totalAllocatedInr]);
+
+  const healthBefore = Number(recommendationsData?.portfolio_health_before ?? 65);
+  const healthAfter = Number(recommendationsData?.portfolio_health_after ?? 85);
+  const healthDelta = (healthAfter - healthBefore).toFixed(1);
+
+  if (loading) {
+    return (
+      <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+          <div className="skeleton-box" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
+          <div className="skeleton-box" style={{ width: '220px', height: '22px' }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '16px' }}>
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="skeleton-box" style={{ width: '120px', height: '20px' }} />
+              <div className="skeleton-box" style={{ width: '100%', height: '50px' }} />
+              <div className="skeleton-box" style={{ width: '80%', height: '16px' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!recommendationsData || !recommendationsData.recommendations) return null;
+
   const getBadgeStyle = (badgeColor) => {
     switch (badgeColor) {
       case 'emerald': return { bg: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: 'rgba(16, 185, 129, 0.3)' };
@@ -88,18 +104,6 @@ export default function RecommendationPanel({
       case 'BUY': default: return { bg: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b' };
     }
   };
-
-  const freshCapital = recommendationsData?.fresh_capital_inr || recommendationsData?.total_capital_inr || 0;
-  const cashFromSales = recommendationsData?.cash_generated_from_sales_inr || 0;
-  const totalRebalanceCapital = recommendationsData?.total_rebalancing_capital_inr || recommendationsData?.total_capital_inr || 0;
-
-  const totalAllocatedInr = useMemo(() => recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0), [recs]);
-  const totalAllocatedPct = totalRebalanceCapital > 0 ? (totalAllocatedInr / totalRebalanceCapital) * 100 : 0;
-  // eslint-disable-next-line no-unused-vars
-  const totalSuggestedUnits = useMemo(() => recs.reduce((sum, r) => sum + (r.suggested_quantity || 0), 0), [recs]);
-  const weightedExpReturnPct = useMemo(() => totalAllocatedInr > 0 ? recs.reduce((sum, r) => sum + ((r.allocation_inr || 0) * (r.expected_return_pct || 0)), 0) / totalAllocatedInr : 0, [recs, totalAllocatedInr]);
-
-  if (!recommendationsData || !recommendationsData.recommendations) return null;
 
   const handleExportCSV = () => {
     const headers = "Action Type,Ticker,Instrument Name,Category,Current Rate (INR),Target Sell Rate (INR),Profit Per Share (INR),Total Stock Profit (INR),Action Qty,Freed Cash (INR),Allocation (INR),Allocation (%),Expected Return (%),Action Summary\n";
@@ -159,9 +163,9 @@ export default function RecommendationPanel({
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>HEALTH IMPROVEMENT</div>
             <div style={{ fontSize: '16px', fontWeight: '800', color: '#34d399' }}>
-              +{((recommendationsData.portfolio_health_after - recommendationsData.portfolio_health_before)).toFixed(1)} pts
+              +{healthDelta} pts
               <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '500', marginLeft: '4px' }}>
-                ({recommendationsData.portfolio_health_after}/100)
+                ({healthAfter}/100)
               </span>
             </div>
           </div>

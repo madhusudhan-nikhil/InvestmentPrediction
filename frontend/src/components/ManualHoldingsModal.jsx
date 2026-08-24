@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, CheckCircle2, IndianRupee, HelpCircle, Layers } from 'lucide-react';
 
 const POPULAR_NSE_TICKERS = [
@@ -8,8 +8,6 @@ const POPULAR_NSE_TICKERS = [
 ];
 
 export default function ManualHoldingsModal({ isOpen, onClose, currentHoldings, onApplyHoldings }) {
-  if (!isOpen) return null;
-
   const [rows, setRows] = useState(() => {
     if (currentHoldings && currentHoldings.length > 0) {
       return currentHoldings.map(h => ({
@@ -24,6 +22,18 @@ export default function ManualHoldingsModal({ isOpen, onClose, currentHoldings, 
       { ticker: "HDFCBANK", quantity: 50, purchase_price: 1520 }
     ];
   });
+
+  useEffect(() => {
+    if (isOpen && currentHoldings && currentHoldings.length > 0) {
+      setRows(currentHoldings.map(h => ({
+        ticker: (h.Ticker || h.ticker || "").replace('.NS', ''),
+        quantity: h.Quantity || h.quantity || 1,
+        purchase_price: h["Purchase Price"] || h.purchase_price || h.buy_price || 100
+      })));
+    }
+  }, [isOpen, currentHoldings]);
+
+  if (!isOpen) return null;
 
   const handleRowChange = (index, field, value) => {
     const updated = [...rows];

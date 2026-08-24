@@ -1,7 +1,7 @@
 import React from 'react';
 import { Activity, ShieldAlert, TrendingDown, TrendingUp, RefreshCw, Flame, Globe, Database } from 'lucide-react';
 
-export default function TopBar({ macroData, loading, onRefresh, onSyncTickers, syncingTickers }) {
+export default function TopBar({ macroData, loading, onRefresh, onSyncTickers, syncingTickers, onOpenGlossary }) {
   if (!macroData) return null;
 
   const getThreatColor = (score) => {

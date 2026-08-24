@@ -10,12 +10,12 @@ export default function BrokerExecutionModal({
   recommendationsData,
   onSuccessToast
 }) {
-  if (!isOpen || !recommendationsData) return null;
-
   const [selectedBroker, setSelectedBroker] = useState("Zerodha KiteConnect");
   const [executing, setExecuting] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  if (!isOpen || !recommendationsData) return null;
 
   const recs = recommendationsData.recommendations || [];
   // Filter for actionable orders (BUY, TOP-UP, SELL)
