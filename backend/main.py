@@ -381,8 +381,18 @@ async def get_tickers():
     tickers = await asyncio.to_thread(get_all_tickers)
     return {"status": "SUCCESS", "total_tickers": len(tickers), "tickers": tickers}
 
+from fastapi import Header
+import os
+import hmac
+
+def verify_admin_token(x_admin_token: Optional[str]):
+    admin_token = os.getenv("ADMIN_TOKEN")
+    if not admin_token or not x_admin_token or not hmac.compare_digest(x_admin_token.encode('utf-8'), admin_token.encode('utf-8')):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 @app.post("/api/tickers")
-async def save_tickers(req: TickerSaveRequest):
+async def save_tickers(req: TickerSaveRequest, x_admin_token: Optional[str] = Header(default=None)):
+    verify_admin_token(x_admin_token)
     """Update and persist modified ticker dataset in JSON database."""
     try:
         raw_items = [item.model_dump() for item in req.tickers]
@@ -393,7 +403,8 @@ async def save_tickers(req: TickerSaveRequest):
         raise HTTPException(status_code=500, detail="Failed to save ticker dataset")
 
 @app.post("/api/tickers/sync", response_model=TickerSyncResponse)
-async def sync_tickers():
+async def sync_tickers(x_admin_token: Optional[str] = Header(default=None)):
+    verify_admin_token(x_admin_token)
     """On-demand synchronization of Top 100 NSE & Top 500 BSE securities dataset."""
     try:
         res = await asyncio.to_thread(sync_top_tickers_dataset)
