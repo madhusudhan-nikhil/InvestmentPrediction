@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { formatINR, formatINRDenomination } from '../utils/formatters';
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
 export default function RecommendationPanel({ 
   recommendationsData, 
   loading,
@@ -18,6 +21,9 @@ export default function RecommendationPanel({
   const [viewStyle, setViewStyle] = useState("card"); // 'card' | 'table'
   const [sortField, setSortField] = useState("allocation_inr");
   const [sortAsc, setSortAsc] = useState(false);
+
+  const recs = recommendationsData?.recommendations || EMPTY_ARRAY;
+  const actionCounts = recommendationsData?.action_counts || EMPTY_OBJECT;
 
   if (loading) {
     return (
@@ -38,9 +44,6 @@ export default function RecommendationPanel({
       </div>
     );
   }
-
-  const recs = recommendationsData?.recommendations || [];
-  const actionCounts = recommendationsData?.action_counts || {};
 
   const categories = [
     { id: "ALL", label: `All Categories (${recs.length})` },

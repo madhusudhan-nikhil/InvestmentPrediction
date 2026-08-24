@@ -13,3 +13,6 @@
 ## 2024-08-14 - React Array Re-renders (TickerManager Filtering)
 **Learning:** In the frontend, iterating through large arrays (up to 600 tickers in the universe) multiple times on every render for filtering inside `TickerManager` can cause noticeable UI latency during text input (search).
 **Action:** Wrapped the `filteredTickers` array calculation with `React.useMemo()` and hoisted the `search.toLowerCase()` call to prevent redundant string allocations.
+## 2024-08-24 - React Inline Fallback Dependencies
+**Learning:** In the frontend, using inline fallbacks like `data || []` or `data || {}` directly outside of `useMemo` when they are used as dependencies in other `useMemo` blocks causes unnecessary downstream re-evaluations. The empty array/object reference is recreated on every render, breaking reference equality and causing child components/hooks to trigger unnecessarily.
+**Action:** Always declare the fallback array or object as a module-level constant (e.g., `const EMPTY_ARRAY = [];`) and use it in place of the inline fallback. Module-level constants bypass Hook rules entirely, are zero-overhead, and ensure stable references across renders.
