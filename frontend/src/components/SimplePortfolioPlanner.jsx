@@ -79,7 +79,7 @@ export default function SimplePortfolioPlanner({
   };
 
   // Helper formatting values
-  const recsList = recommendations?.recommendations || [];
+  const recsList = useMemo(() => recommendations?.recommendations || [], [recommendations?.recommendations]);
   const freshCap = recommendations?.fresh_capital_inr || availableCapital || 0;
   const cashFromSales = recommendations?.cash_generated_from_sales_inr || 0;
   const totalRebalanceCap = recommendations?.total_rebalancing_capital_inr || (freshCap + cashFromSales);

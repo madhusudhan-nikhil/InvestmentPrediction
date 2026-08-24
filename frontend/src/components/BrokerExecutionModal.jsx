@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, CheckCircle2, Zap, Copy, ExternalLink, ShieldCheck, RefreshCw, Layers } from 'lucide-react';
 import axios from 'axios';
 
@@ -17,11 +17,11 @@ export default function BrokerExecutionModal({
   const [executionResult, setExecutionResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const recs = recommendationsData.recommendations || [];
+  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
   // Filter for actionable orders (BUY, TOP-UP, SELL)
-  const orders = recs.filter(r => (r.suggested_quantity > 0) || (r.action_type === 'SELL'));
+  const orders = useMemo(() => recs.filter(r => (r.suggested_quantity > 0) || (r.action_type === 'SELL')), [recs]);
 
-  const totalValue = recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0);
+  const totalValue = useMemo(() => recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0), [recs]);
   const estCharges = Math.round(totalValue * 0.0012); // ~0.12% approximate STT & brokerage
 
   const brokers = [

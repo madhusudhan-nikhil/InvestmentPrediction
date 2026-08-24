@@ -19,36 +19,8 @@ export default function RecommendationPanel({
   const [sortField, setSortField] = useState("allocation_inr");
   const [sortAsc, setSortAsc] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <div className="skeleton-box" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
-          <div className="skeleton-box" style={{ width: '220px', height: '22px' }} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '16px' }}>
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="skeleton-box" style={{ width: '120px', height: '20px' }} />
-              <div className="skeleton-box" style={{ width: '100%', height: '50px' }} />
-              <div className="skeleton-box" style={{ width: '80%', height: '16px' }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const recs = recommendationsData?.recommendations || [];
-  const actionCounts = recommendationsData?.action_counts || {};
-
-  const categories = [
-    { id: "ALL", label: `All Categories (${recs.length})` },
-    { id: "Category A", label: "Category A: Rebalance" },
-    { id: "Category B", label: "Category B: Diversifiers" },
-    { id: "Category C", label: "Category C: Systematic Alpha" },
-    { id: "Category D", label: "Category D: Macro Hedges" }
-  ];
+  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
+  const actionCounts = useMemo(() => recommendationsData?.action_counts || {}, [recommendationsData?.action_counts]);
 
   const equityCount = useMemo(() => recs.filter(r => (r.asset_type || "EQUITY") === "EQUITY").length, [recs]);
   const mfEtfCount = useMemo(() => recs.filter(r => r.asset_type === "MUTUAL_FUND_ETF").length, [recs]);
@@ -69,6 +41,38 @@ export default function RecommendationPanel({
       return 0;
     });
   }, [recs, activeCategory, assetFilter, actionFilter, sortField, sortAsc]);
+
+  const totalAllocatedInr = useMemo(() => recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0), [recs]);
+  const totalSuggestedUnits = useMemo(() => recs.reduce((sum, r) => sum + (r.suggested_quantity || 0), 0), [recs]);
+  const weightedExpReturnPct = useMemo(() => totalAllocatedInr > 0 ? recs.reduce((sum, r) => sum + ((r.allocation_inr || 0) * (r.expected_return_pct || 0)), 0) / totalAllocatedInr : 0, [recs, totalAllocatedInr]);
+
+  if (loading) {
+    return (
+      <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+          <div className="skeleton-box" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
+          <div className="skeleton-box" style={{ width: '220px', height: '22px' }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '16px' }}>
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="skeleton-box" style={{ width: '120px', height: '20px' }} />
+              <div className="skeleton-box" style={{ width: '100%', height: '50px' }} />
+              <div className="skeleton-box" style={{ width: '80%', height: '16px' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const categories = [
+    { id: "ALL", label: `All Categories (${recs.length})` },
+    { id: "Category A", label: "Category A: Rebalance" },
+    { id: "Category B", label: "Category B: Diversifiers" },
+    { id: "Category C", label: "Category C: Systematic Alpha" },
+    { id: "Category D", label: "Category D: Macro Hedges" }
+  ];
 
   const getBadgeStyle = (badgeColor) => {
     switch (badgeColor) {
@@ -93,11 +97,7 @@ export default function RecommendationPanel({
   const cashFromSales = recommendationsData?.cash_generated_from_sales_inr || 0;
   const totalRebalanceCapital = recommendationsData?.total_rebalancing_capital_inr || recommendationsData?.total_capital_inr || 0;
 
-  const totalAllocatedInr = useMemo(() => recs.reduce((sum, r) => sum + (r.allocation_inr || 0), 0), [recs]);
   const totalAllocatedPct = totalRebalanceCapital > 0 ? (totalAllocatedInr / totalRebalanceCapital) * 100 : 0;
-  // eslint-disable-next-line no-unused-vars
-  const totalSuggestedUnits = useMemo(() => recs.reduce((sum, r) => sum + (r.suggested_quantity || 0), 0), [recs]);
-  const weightedExpReturnPct = useMemo(() => totalAllocatedInr > 0 ? recs.reduce((sum, r) => sum + ((r.allocation_inr || 0) * (r.expected_return_pct || 0)), 0) / totalAllocatedInr : 0, [recs, totalAllocatedInr]);
 
   if (!recommendationsData || !recommendationsData.recommendations) return null;
 
