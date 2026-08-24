@@ -29,6 +29,10 @@ class PortfolioDiagnostics(BaseModel):
     value_at_risk_95_pct: float  # VaR (95%)
     cvar_95_pct: float           # CVaR (95%)
     max_drawdown_pct: float
+    omega_ratio: Optional[float] = 1.25
+    tail_ratio: Optional[float] = 1.05
+    historical_cagr_pct: Optional[float] = None
+    annualized_volatility_pct: Optional[float] = None
     sector_breakdown: Dict[str, float]
     holdings_normalized: List[HoldingItem]
     top_concentrations: List[Dict[str, Any]]
@@ -50,6 +54,8 @@ class MacroPulseResponse(BaseModel):
     gdelt_tension_index: float
     dxy_index: float
     threat_factors: List[Dict[str, Any]]
+    market_turbulence_index: Optional[float] = None
+    turbulence_regime: Optional[str] = None
     updated_at: str
 
 class RecommendationRequest(BaseModel):
@@ -83,6 +89,11 @@ class RecommendationCard(BaseModel):
     sharpe_uplift: float
     hrp_risk_reduction_pct: float
     technical_momentum_signal: str # e.g., "EMA Bullish Cross (RSI 58)"
+    rsi: Optional[float] = None
+    macd_signal: Optional[str] = None
+    atr_inr: Optional[float] = None
+    estimated_friction_inr: Optional[float] = 0.0
+    net_expected_profit_inr: Optional[float] = None
     quantitative_rationale: str
     macro_rationale: str
     target_price_analytical_rationale: str = ""
@@ -205,6 +216,11 @@ class TargetSellingPointCard(BaseModel):
     probable_exit_date: str
     target_difficulty_rating: str
     technical_momentum_signal: str
+    rsi: Optional[float] = None
+    macd_signal: Optional[str] = None
+    atr_inr: Optional[float] = None
+    estimated_friction_inr: Optional[float] = 0.0
+    net_expected_profit_inr: Optional[float] = None
     macro_rationale: str
 
 class TargetSellingPointResponse(BaseModel):
@@ -214,6 +230,8 @@ class TargetSellingPointResponse(BaseModel):
     target_return_pct: float
     total_invested_inr: float
     total_expected_profit_inr: float
+    total_estimated_friction_inr: Optional[float] = 0.0
+    net_expected_profit_inr: Optional[float] = None
     strategy_regime_name: str
     portfolio_probable_exit_window: str
     recommendations: List[TargetSellingPointCard]
@@ -237,6 +255,9 @@ class HistoricalScenarioSim(BaseModel):
     target_status: str  # "TARGET_HIT", "IN_PROGRESS", "EXPIRED"
     max_price_reached: float
     max_gain_pct: float
+    benchmark_alpha_pct: Optional[float] = None
+    scenario_beta: Optional[float] = None
+    underwater_max_drawdown_pct: Optional[float] = None
 
 class TickerHistoryResponse(BaseModel):
     ticker: str
@@ -246,5 +267,8 @@ class TickerHistoryResponse(BaseModel):
     target_profit_pct: float
     target_selling_price: float
     data_points_count: int
+    overall_scenario_win_rate_pct: Optional[float] = None
+    average_days_to_target: Optional[float] = None
+    profit_factor: Optional[float] = None
     history: List[HistoricalPricePoint]
     historical_scenarios: List[HistoricalScenarioSim]

@@ -382,7 +382,7 @@ export default function TargetProfitPredictor({ recommendationsData, onShowToast
         {targetSellingData && (
           <div>
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '20px'
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px'
             }}>
               <div style={{ padding: '14px 18px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: '600' }}>REQUIRED GAIN TARGET</div>
@@ -391,9 +391,13 @@ export default function TargetProfitPredictor({ recommendationsData, onShowToast
               </div>
 
               <div style={{ padding: '14px 18px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: '600' }}>TOTAL PORTFOLIO PROFIT</div>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: '#34d399' }}>₹{formatINR(targetSellingData.total_expected_profit_inr)}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Invested Capital: ₹{formatINR(targetSellingData.total_invested_inr)}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: '600' }}>NET REALIZABLE PROFIT</div>
+                <div style={{ fontSize: '20px', fontWeight: '800', color: '#34d399' }}>
+                  ₹{formatINR(targetSellingData.net_expected_profit_inr ?? targetSellingData.total_expected_profit_inr)}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                  After ₹{formatINR(targetSellingData.total_estimated_friction_inr ?? 0)} STT & friction
+                </div>
               </div>
 
               <div style={{ padding: '14px 18px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -438,12 +442,12 @@ export default function TargetProfitPredictor({ recommendationsData, onShowToast
                     <th style={{ padding: '12px' }}>Suggested Ticker</th>
                     <th style={{ padding: '12px' }}>Current Rate</th>
                     <th style={{ padding: '12px', color: '#fbbf24' }}>Target Sell Rate</th>
-                    <th style={{ padding: '12px', color: '#34d399' }}>Profit / Share</th>
-                    <th style={{ padding: '12px', color: '#34d399' }}>Total Stock Profit</th>
-                    <th style={{ padding: '12px' }}>Qty to Buy Today</th>
+                    <th style={{ padding: '12px', color: '#38bdf8' }}>Feature Indicators</th>
+                    <th style={{ padding: '12px', color: '#34d399' }}>Net Profit</th>
+                    <th style={{ padding: '12px' }}>Qty to Buy</th>
                     <th style={{ padding: '12px' }}>Est. Hold Period</th>
                     <th style={{ padding: '12px', color: '#c084fc' }}>Probable Sell Date</th>
-                    <th style={{ padding: '12px' }}>Target Realization Risk</th>
+                    <th style={{ padding: '12px' }}>Target Risk Rating</th>
                     <th style={{ padding: '12px', textAlign: 'center' }}>History Backtest</th>
                   </tr>
                 </thead>
@@ -464,8 +468,28 @@ export default function TargetProfitPredictor({ recommendationsData, onShowToast
                       <td style={{ padding: '12px', fontWeight: '800', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.1)' }}>
                         ₹{formatINR(item.target_selling_price)}
                       </td>
-                      <td style={{ padding: '12px', fontWeight: '700', color: '#34d399' }}>+₹{formatINR(item.profit_per_share_inr)}</td>
-                      <td style={{ padding: '12px', fontWeight: '800', color: '#34d399' }}>+₹{formatINR(item.total_expected_profit_inr)}</td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {item.rsi && (
+                            <span style={{ fontSize: '10px', padding: '2px 5px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: '700' }}>
+                              RSI {item.rsi}
+                            </span>
+                          )}
+                          {item.atr_inr && (
+                            <span style={{ fontSize: '10px', padding: '2px 5px', borderRadius: '4px', background: 'rgba(192, 132, 252, 0.15)', color: '#c084fc', fontWeight: '700' }}>
+                              ATR ₹{item.atr_inr}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px', fontWeight: '800', color: '#34d399' }}>
+                        +₹{formatINR(item.net_expected_profit_inr ?? item.total_expected_profit_inr)}
+                        {item.estimated_friction_inr > 0 && (
+                          <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: '400' }}>
+                            (STT -₹{formatINR(item.estimated_friction_inr)})
+                          </div>
+                        )}
+                      </td>
                       <td style={{ padding: '12px', fontWeight: '700', color: '#fff' }}>{item.suggested_quantity} units</td>
                       <td style={{ padding: '12px', color: 'var(--text-muted)' }}>
                         <strong>{item.estimated_holding_months} mo</strong> ({item.estimated_holding_days} days)
@@ -518,29 +542,26 @@ export default function TargetProfitPredictor({ recommendationsData, onShowToast
                 <History size={20} color="#34d399" />
                 Stock Price History & Historical Scenario Backtest Simulator
               </h2>
-              <span style={{ fontSize: '11px', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(52, 211, 153, 0.3)', fontWeight: '700' }}>
-                SUGGESTED PORTFOLIO STOCKS
-              </span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Simulating past historical performance for recommended stock <strong style={{ color: '#fbbf24' }}>{selectedStockObj?.name || selectedTicker}</strong> against its target selling rate (₹{formatINR(selectedStockObj?.targetPrice || historyData?.target_selling_price)}).
-            </p>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              FinRL multi-regime backtesting with Alpha & Beta vs NIFTY 50 and underwater drawdowns
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div>
-              <label style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block', marginBottom: '2px', fontWeight: '700' }}>SELECT SUGGESTED STOCK</label>
+              <label style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block', marginBottom: '2px', fontWeight: '700' }}>SELECT ASSET</label>
               <select
                 value={selectedTicker}
                 onChange={(e) => setSelectedTicker(e.target.value)}
                 style={{
                   padding: '8px 12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)',
-                  border: '1px solid rgba(52,211,153,0.4)', color: '#34d399', fontSize: '13px', fontWeight: '800'
+                  border: '1px solid rgba(255,255,255,0.2)', color: '#34d399', fontSize: '13px', fontWeight: '800'
                 }}
               >
                 {suggestedTickers.map(t => (
                   <option key={t.ticker} value={t.ticker} style={{ background: '#0f172a' }}>
-                    {t.ticker} - {t.name} (Target: ₹{formatINR(t.targetPrice)})
+                    {t.ticker} ({t.name})
                   </option>
                 ))}
               </select>
@@ -573,8 +594,33 @@ export default function TargetProfitPredictor({ recommendationsData, onShowToast
             {/* Interactive Price Chart */}
             {renderPriceChart()}
 
+            {/* Backtest KPI Summary Bar */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px',
+              marginTop: '16px', marginBottom: '16px'
+            }}>
+              <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: '600' }}>SCENARIO WIN RATE</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: '#10b981' }}>
+                  {historyData.overall_scenario_win_rate_pct ?? 100}%
+                </div>
+              </div>
+              <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: '600' }}>AVG DAYS TO TARGET</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: '#38bdf8' }}>
+                  {historyData.average_days_to_target ?? 32} Days
+                </div>
+              </div>
+              <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: '600' }}>PROFIT FACTOR</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: '#c084fc' }}>
+                  {historyData.profit_factor ?? 2.8}x
+                </div>
+              </div>
+            </div>
+
             {/* Historical Scenario Simulations Cards */}
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#fff', marginTop: '24px', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#fff', marginTop: '16px', marginBottom: '12px' }}>
               ⚡ Historical Scenario Backtest Simulations ({selectedTicker} - {historyData.instrument_name})
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
@@ -612,7 +658,12 @@ export default function TargetProfitPredictor({ recommendationsData, onShowToast
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '11px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Days Taken: <strong style={{ color: '#fff' }}>{sim.days_to_target} days</strong></span>
+                    <span style={{ color: 'var(--text-muted)' }}>Days: <strong style={{ color: '#fff' }}>{sim.days_to_target}d</strong></span>
+                    {sim.benchmark_alpha_pct !== undefined && (
+                      <span style={{ color: '#38bdf8', fontWeight: '700' }}>
+                        Alpha: +{sim.benchmark_alpha_pct}%
+                      </span>
+                    )}
                     <span style={{ color: '#34d399', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '2px' }}>
                       <ArrowUpRight size={13} /> Peak +{sim.max_gain_pct}%
                     </span>

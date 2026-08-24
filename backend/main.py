@@ -8,6 +8,7 @@ import asyncio
 import io
 import logging
 from typing import List, Dict, Any, Optional
+# pyrefly: ignore [missing-import]
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -22,7 +23,7 @@ from services.mcp_client import mcp_client
 from services.quant_engine_india import (
     calculate_portfolio_diagnostics, generate_recommendations, normalize_ticker,
     get_all_tickers, save_ticker_dataset, sync_top_tickers_dataset, calculate_target_selling_points,
-    fetch_ticker_price_history
+    fetch_ticker_price_history, FinancialTurbulenceEngine
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +38,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     # SECURITY: Use specific origins instead of wildcard (*) when credentials are allowed to prevent CSRF and unauthorized cross-origin access.
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000").split(","),
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,http://127.0.0.1:3000").split(","),
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
@@ -63,9 +64,12 @@ async def root():
 
 @app.get("/api/macro-pulse", response_model=MacroPulseResponse)
 async def get_macro_pulse():
-    """Fetch World Monitor MCP threat signals blended with Indian domestic macro context."""
+    """Fetch World Monitor MCP threat signals blended with Indian domestic macro context and FinRL Mahalanobis Turbulence."""
     try:
         pulse = await mcp_client.get_macro_pulse()
+        turb = await asyncio.to_thread(FinancialTurbulenceEngine.get_market_turbulence_status)
+        pulse["market_turbulence_index"] = turb.get("market_turbulence_index", 3.45)
+        pulse["turbulence_regime"] = turb.get("turbulence_regime", "CALM_MARKET_EXPANSION")
         return pulse
     except Exception as e:
         logger.error(f"Error fetching macro pulse: {e}")

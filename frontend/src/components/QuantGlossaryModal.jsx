@@ -11,6 +11,11 @@ export default function QuantGlossaryModal({ isOpen, onClose }) {
       desc: "A Nobel-level quantitative method that clusters stocks by their correlation and balances risk across clusters so that no single market sector causes a severe portfolio crash."
     },
     {
+      term: "Financial Turbulence Index (Mahalanobis Distance)",
+      badge: "FinRL Regime Detection",
+      desc: "Measures statistical abnormality in market returns: (y_t - μ)^T Σ^(-1) (y_t - μ). When turbulence spikes above the 90th percentile, the system automatically triggers a quantitative risk-off hedging tilt into Gold and Liquid funds."
+    },
+    {
       term: "Portfolio Health Score (0 - 100)",
       badge: "Diagnostic Metric",
       desc: "A composite health grade evaluating your diversification, sector balance, downside volatility resistance, and vulnerability to macroeconomic shocks (crude oil, currency, FII flows). >75 is considered optimal."
@@ -21,14 +26,24 @@ export default function QuantGlossaryModal({ isOpen, onClose }) {
       desc: "Measures whether your capital is concentrated in too few stocks. An HHI below 0.15 indicates healthy diversification; above 0.25 indicates danger of single-stock overexposure."
     },
     {
-      term: "Sortino Ratio",
-      badge: "Downside Risk",
-      desc: "Measures return generated per unit of harmful downside risk. Unlike Sharpe ratio (which penalizes upside gains too), Sortino only penalizes negative volatility. >1.5 is strong."
+      term: "Realized Sortino & Calmar Ratios",
+      badge: "FinRL Downside Risk",
+      desc: "• Sortino: Measures excess return per unit of bad downside deviation (downside semi-variance). >1.5 is strong.\n• Calmar: Ratio of annualized CAGR to historical Maximum Drawdown."
     },
     {
-      term: "Value at Risk (VaR 95%)",
-      badge: "Risk Metric",
-      desc: "The maximum percentage loss you are likely to experience on 95 out of 100 normal trading sessions (e.g. -2.1% means 95% of days won't drop worse than 2.1%)."
+      term: "Value at Risk (VaR 95%) & CVaR (Expected Shortfall)",
+      badge: "Tail Risk",
+      desc: "• VaR 95%: The maximum expected daily loss on 95 out of 100 normal sessions.\n• CVaR 95% (Expected Shortfall): The average loss expected in the worst 5% tail events."
+    },
+    {
+      term: "Omega Ratio & Tail Ratio",
+      badge: "Distribution Metrics",
+      desc: "• Omega Ratio: The probability-weighted ratio of gains versus losses relative to the risk-free rate (>1.2 is favorable).\n• Tail Ratio: Ratio of the 95th percentile upside return to the 5th percentile downside risk."
+    },
+    {
+      term: "Statutory Friction & STT Cost (0.15%)",
+      badge: "Friction Modeling",
+      desc: "Accounts for Indian statutory delivery charges (Securities Transaction Tax / STT = 0.1%, exchange turnover charges, SEBI fees, and stamp duty) to report realistic net realizable profit."
     },
     {
       term: "Category A: Core Holdings to Rebalance",
@@ -43,7 +58,7 @@ export default function QuantGlossaryModal({ isOpen, onClose }) {
     {
       term: "Category C: Systematic Alpha / Momentum",
       badge: "Category C",
-      desc: "High-velocity momentum stocks and growth leaders selected to generate outsized returns above benchmark indices."
+      desc: "High-velocity momentum stocks and growth leaders selected to generate outsized returns above benchmark indices with live RSI and MACD momentum confirmation."
     },
     {
       term: "Category D: Macro Hedges & Defensives",

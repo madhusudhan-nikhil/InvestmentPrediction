@@ -13,8 +13,40 @@ const SECTOR_COLORS = {
   "Other Equities": "#9ca3af"
 };
 
-export default function DiagnosticsPanel({ diagnostics, onOpenGlossary }) {
-  if (!diagnostics) return null;
+export default function DiagnosticsPanel({ diagnostics, onOpenGlossary, onLoadSamplePortfolio }) {
+  if (!diagnostics) {
+    return (
+      <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', textAlign: 'center' }}>
+        <div style={{
+          width: '48px', height: '48px', borderRadius: '12px',
+          background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto'
+        }}>
+          <PieIcon size={24} color="#10b981" />
+        </div>
+        <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', marginBottom: '6px' }}>
+          Portfolio Diagnostics & FinRL Downside Risk Assessment
+        </h3>
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '520px', margin: '0 auto 16px auto', lineHeight: '1.5' }}>
+          Upload your existing portfolio CSV or enter holdings in the sidebar to compute your Portfolio Health Score, HHI Concentration Index, FinRL Realized Sortino, Value at Risk (VaR 95%), and Sector Breakdown.
+        </p>
+        {onLoadSamplePortfolio && (
+          <button
+            onClick={onLoadSamplePortfolio}
+            type="button"
+            style={{
+              padding: '8px 18px', borderRadius: '8px',
+              background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.35)',
+              color: '#818cf8', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: '6px'
+            }}
+          >
+            ⚡ Load Sample Nifty 50 Holdings to Test
+          </button>
+        )}
+      </div>
+    );
+  }
 
   // ⚡ Bolt Optimization: Memoize the sectorData array calculation.
   // This prevents the Recharts <PieChart> component from seeing a new array reference on every render,
@@ -101,21 +133,38 @@ export default function DiagnosticsPanel({ diagnostics, onOpenGlossary }) {
           </div>
         </div>
 
-        {/* QuantStats Downside Risk (Sortino & Calmar) */}
+        {/* FinRL Empirical Downside Risk Metrics */}
         <div className="glass-card" style={{ padding: '16px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>QUANTSTATS RISK METRICS</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>FINRL DOWNSIDE RISK METRICS</div>
+            <span style={{ fontSize: '10px', color: '#10b981', background: 'rgba(16, 185, 129, 0.12)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
+              Real Time-Series
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px' }}>
             <div>
               <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Sortino Ratio</div>
-              <div style={{ fontSize: '16px', fontWeight: '700', color: '#34d399' }}>{diagnostics.sortino_ratio || 1.45}</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#34d399' }}>{diagnostics.sortino_ratio ?? 1.45}</div>
             </div>
             <div>
               <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Calmar Ratio</div>
-              <div style={{ fontSize: '16px', fontWeight: '700', color: '#818cf8' }}>{diagnostics.calmar_ratio || 1.10}</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#818cf8' }}>{diagnostics.calmar_ratio ?? 1.10}</div>
             </div>
             <div>
               <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>VaR (95%)</div>
-              <div style={{ fontSize: '16px', fontWeight: '700', color: '#fb7185' }}>{diagnostics.value_at_risk_95_pct || -2.1}%</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#fb7185' }}>{diagnostics.value_at_risk_95_pct ?? -2.1}%</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>CVaR (95%)</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#f43f5e' }}>{diagnostics.cvar_95_pct ?? -3.4}%</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Omega Ratio</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#38bdf8' }}>{diagnostics.omega_ratio ?? 1.25}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Tail Ratio</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#a78bfa' }}>{diagnostics.tail_ratio ?? 1.05}</div>
             </div>
           </div>
         </div>

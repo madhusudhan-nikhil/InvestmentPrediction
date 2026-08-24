@@ -392,6 +392,7 @@ export default function App() {
                 <DiagnosticsPanel 
                   diagnostics={diagnostics}
                   onOpenGlossary={() => setIsGlossaryOpen(true)}
+                  onLoadSamplePortfolio={loadSamplePortfolio}
                 />
               </main>
             </div>

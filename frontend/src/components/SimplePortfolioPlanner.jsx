@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Upload, FileText, CheckCircle2, TrendingUp, PieChart, 
   BarChart3, Download, Zap, AlertCircle, ArrowUpRight, 
