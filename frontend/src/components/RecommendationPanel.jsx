@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { formatINR, formatINRDenomination } from '../utils/formatters';
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
 export default function RecommendationPanel({ 
   recommendationsData, 
   loading,
@@ -19,8 +22,10 @@ export default function RecommendationPanel({
   const [sortField, setSortField] = useState("allocation_inr");
   const [sortAsc, setSortAsc] = useState(false);
 
-  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
-  const actionCounts = useMemo(() => recommendationsData?.action_counts || {}, [recommendationsData?.action_counts]);
+  // ⚡ Bolt Optimization: Use module-level constants to eliminate useMemo hook overhead
+  // while preserving stable reference equality for dependency arrays.
+  const recs = recommendationsData?.recommendations || EMPTY_ARRAY;
+  const actionCounts = recommendationsData?.action_counts || EMPTY_OBJECT;
 
   const equityCount = useMemo(() => recs.filter(r => (r.asset_type || "EQUITY") === "EQUITY").length, [recs]);
   const mfEtfCount = useMemo(() => recs.filter(r => r.asset_type === "MUTUAL_FUND_ETF").length, [recs]);

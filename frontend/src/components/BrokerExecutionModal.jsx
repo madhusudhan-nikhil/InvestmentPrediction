@@ -4,6 +4,8 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+const EMPTY_ARRAY = [];
+
 export default function BrokerExecutionModal({
   isOpen,
   onClose,
@@ -17,7 +19,9 @@ export default function BrokerExecutionModal({
   const [executionResult, setExecutionResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
+  // ⚡ Bolt Optimization: Replace useMemo with module-level constant fallback
+  // to avoid hook overhead while maintaining reference stability for downstream hooks.
+  const recs = recommendationsData?.recommendations || EMPTY_ARRAY;
   // Filter for actionable orders (BUY, TOP-UP, SELL)
   const orders = useMemo(() => recs.filter(r => (r.suggested_quantity > 0) || (r.action_type === 'SELL')), [recs]);
 
