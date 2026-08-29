@@ -16,3 +16,6 @@
 ## 2026-11-20 - React Array Re-renders (Fallback values)
 **Learning:** In React, inline fallback values like `data || []` passed into `useMemo` dependencies cause the memoized value to be recomputed on every render when the data is null/undefined, because `[]` creates a new array reference each time.
 **Action:** Wrap the fallback assignment itself in `useMemo` (e.g., `const arr = useMemo(() => data || [], [data])`) to preserve referential equality and prevent cascading re-renders.
+## 2024-08-29 - React Array Re-renders (useMemo Fallback Overhead)
+**Learning:** In React, using `useMemo(() => data?.arr || [], [data?.arr])` just to provide a stable fallback array still adds React Hook execution overhead on every render, even though referential equality is preserved. This micro-inefficiency is noticeable when applied across many large components.
+**Action:** Instead of using `useMemo` for static fallback arrays or objects, define module-level constants (e.g., `const EMPTY_ARRAY = []; const EMPTY_OBJECT = {};`) outside the component and use them directly (e.g., `const arr = data?.arr || EMPTY_ARRAY;`). This entirely eliminates hook execution overhead and completely bypasses React Hook rules.
