@@ -1014,6 +1014,7 @@ def fetch_ticker_price_history(
         t = yf.Ticker(clean_ticker)
         df = t.history(period=period)
         if not df.empty:
+            df = df.dropna(subset=['Close'])
             df = df.reset_index()
             for _, row in df.iterrows():
                 dt_str = row['Date'].strftime("%Y-%m-%d") if hasattr(row['Date'], 'strftime') else str(row['Date'])[:10]
