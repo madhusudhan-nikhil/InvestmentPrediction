@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { formatINR, formatINRDenomination } from '../utils/formatters';
 
+const EMPTY_ARRAY = [];
+
 export default function SimplePortfolioPlanner({
   availableCapital, setAvailableCapital,
   riskProfile, setRiskProfile,
@@ -79,7 +81,7 @@ export default function SimplePortfolioPlanner({
   };
 
   // Helper formatting values
-  const recsList = useMemo(() => recommendations?.recommendations || [], [recommendations?.recommendations]);
+  const recsList = recommendations?.recommendations || EMPTY_ARRAY;
   const freshCap = recommendations?.fresh_capital_inr || availableCapital || 0;
   const cashFromSales = recommendations?.cash_generated_from_sales_inr || 0;
   const totalRebalanceCap = recommendations?.total_rebalancing_capital_inr || (freshCap + cashFromSales);
