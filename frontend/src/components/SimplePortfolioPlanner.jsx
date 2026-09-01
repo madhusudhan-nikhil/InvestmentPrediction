@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { formatINR, formatINRDenomination } from '../utils/formatters';
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
 export default function SimplePortfolioPlanner({
   availableCapital, setAvailableCapital,
   riskProfile, setRiskProfile,
@@ -79,18 +82,27 @@ export default function SimplePortfolioPlanner({
   };
 
   // Helper formatting values
-  const recsList = useMemo(() => recommendations?.recommendations || [], [recommendations?.recommendations]);
+  const recsList = recommendations?.recommendations || EMPTY_ARRAY;
   const freshCap = recommendations?.fresh_capital_inr || availableCapital || 0;
   const cashFromSales = recommendations?.cash_generated_from_sales_inr || 0;
   const totalRebalanceCap = recommendations?.total_rebalancing_capital_inr || (freshCap + cashFromSales);
   const healthScore = diagnostics?.portfolio_health_score || 85;
 
-  const actionCounts = useMemo(() => recommendations?.action_counts || {
-    SELL: recsList.filter(r => r.action_type === 'SELL').length,
-    KEEP: recsList.filter(r => r.action_type === 'KEEP').length,
-    TOP_UP: recsList.filter(r => r.action_type === 'TOP_UP').length,
-    BUY: recsList.filter(r => r.action_type === 'BUY').length,
-  }, [recommendations?.action_counts, recsList]);
+  // ⚡ Bolt: Replace useMemo fallbacks with module-level constants to eliminate Hook overhead and preserve referential equality.
+  const actionCounts = recommendations?.action_counts || EMPTY_OBJECT;
+
+  // Calculate action counts manually if not provided, avoiding useMemo overhead entirely for fallbacks.
+  let sellCount = actionCounts.SELL;
+  let keepCount = actionCounts.KEEP;
+  let topUpCount = actionCounts.TOP_UP;
+  let buyCount = actionCounts.BUY;
+
+  if (sellCount === undefined) {
+    sellCount = recsList.filter(r => r.action_type === 'SELL').length;
+    keepCount = recsList.filter(r => r.action_type === 'KEEP').length;
+    topUpCount = recsList.filter(r => r.action_type === 'TOP_UP').length;
+    buyCount = recsList.filter(r => r.action_type === 'BUY').length;
+  }
 
   const filteredRecs = useMemo(() => {
     return [...recsList].filter(r => {
@@ -434,7 +446,7 @@ export default function SimplePortfolioPlanner({
             <div style={{ fontSize: '20px', fontWeight: '800', color: '#fb7185', marginTop: '4px' }}>
               ₹{formatINR(cashFromSales)}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>From {actionCounts.SELL || 0} exit positions</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>From {sellCount || 0} exit positions</div>
           </div>
 
           <div className="glass-panel" style={{ padding: '16px' }}>
@@ -442,7 +454,7 @@ export default function SimplePortfolioPlanner({
             <div style={{ fontSize: '20px', fontWeight: '800', color: '#34d399', marginTop: '4px' }}>
               ₹{formatINR(totalHoldValue)}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Across {actionCounts.KEEP || 0} held stocks</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Across {keepCount || 0} held stocks</div>
           </div>
 
           <div className="glass-panel" style={{ padding: '16px' }}>
@@ -570,7 +582,7 @@ export default function SimplePortfolioPlanner({
                     All ({recsList.length})
                   </button>
 
-                  {actionCounts.SELL > 0 && (
+                  {sellCount > 0 && (
                     <button
                       onClick={() => setActionFilter("SELL")}
                       style={{
@@ -580,11 +592,11 @@ export default function SimplePortfolioPlanner({
                         color: '#fb7185'
                       }}
                     >
-                      🔴 SELL ({actionCounts.SELL || 0})
+                      🔴 SELL ({sellCount || 0})
                     </button>
                   )}
 
-                  {actionCounts.KEEP > 0 && (
+                  {keepCount > 0 && (
                     <button
                       onClick={() => setActionFilter("KEEP")}
                       style={{
@@ -594,11 +606,11 @@ export default function SimplePortfolioPlanner({
                         color: '#34d399'
                       }}
                     >
-                      🟢 HOLD ({actionCounts.KEEP || 0})
+                      🟢 HOLD ({keepCount || 0})
                     </button>
                   )}
 
-                  {actionCounts.TOP_UP > 0 && (
+                  {topUpCount > 0 && (
                     <button
                       onClick={() => setActionFilter("TOP_UP")}
                       style={{
@@ -608,7 +620,7 @@ export default function SimplePortfolioPlanner({
                         color: '#60a5fa'
                       }}
                     >
-                      🔵 TOP-UP ({actionCounts.TOP_UP || 0})
+                      🔵 TOP-UP ({topUpCount || 0})
                     </button>
                   )}
 
@@ -621,7 +633,7 @@ export default function SimplePortfolioPlanner({
                       color: '#fbbf24'
                     }}
                   >
-                    🚀 BUY ({actionCounts.BUY || 0})
+                    🚀 BUY ({buyCount || 0})
                   </button>
                 </div>
 

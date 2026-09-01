@@ -3,6 +3,7 @@ import { X, CheckCircle2, Zap, Copy, ExternalLink, ShieldCheck, RefreshCw, Layer
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8000';
+const EMPTY_ARRAY = [];
 
 export default function BrokerExecutionModal({
   isOpen,
@@ -17,7 +18,7 @@ export default function BrokerExecutionModal({
   const [executionResult, setExecutionResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const recs = useMemo(() => recommendationsData?.recommendations || [], [recommendationsData?.recommendations]);
+  const recs = recommendationsData?.recommendations || EMPTY_ARRAY;
   // Filter for actionable orders (BUY, TOP-UP, SELL)
   const orders = useMemo(() => recs.filter(r => (r.suggested_quantity > 0) || (r.action_type === 'SELL')), [recs]);
 
