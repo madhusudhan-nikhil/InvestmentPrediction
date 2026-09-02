@@ -7,10 +7,37 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
+from collections import defaultdict
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
+
+class RateLimiter:
+    def __init__(self, requests_per_minute: int = 120):
+        self.requests_per_minute = requests_per_minute
+        self.requests = defaultdict(list)
+
+    def is_rate_limited(self, ip: str) -> bool:
+        now = time.time()
+        # Clean up old requests for this IP
+        self.requests[ip] = [req_time for req_time in self.requests[ip] if now - req_time < 60]
+
+        # Periodically clean up empty IPs to prevent memory leak
+        if len(self.requests) > 10000: # Arbitrary threshold
+             # Remove IPs with no recent requests
+             empty_ips = [ip_key for ip_key, times in self.requests.items() if not times]
+             for empty_ip in empty_ips:
+                 del self.requests[empty_ip]
+
+        if len(self.requests[ip]) >= self.requests_per_minute:
+            return True
+        self.requests[ip].append(now)
+        return False
+
+global_rate_limiter = RateLimiter(requests_per_minute=120)
 
 from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
@@ -44,8 +71,20 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_security_headers(request, call_next):
-    response = await call_next(request)
+async def add_security_headers(request: Request, call_next):
+    # SECURITY: Rate Limiting to prevent DoS and brute-force attacks
+    # Support reverse proxies by checking X-Forwarded-For first
+    x_forwarded_for = request.headers.get("X-Forwarded-For")
+    client_ip = x_forwarded_for.split(",")[0].strip() if x_forwarded_for else (request.client.host if request.client else "127.0.0.1")
+
+    if global_rate_limiter.is_rate_limited(client_ip):
+        response = JSONResponse(
+            status_code=429,
+            content={"detail": "Too many requests, please try again later."}
+        )
+    else:
+        response = await call_next(request)
+
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
