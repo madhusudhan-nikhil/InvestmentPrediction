@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Upload, FileText, CheckCircle2, TrendingUp, PieChart, 
   BarChart3, Download, Zap, AlertCircle, ArrowUpRight, 
@@ -118,7 +118,12 @@ export default function SimplePortfolioPlanner({
     }
   };
 
-  const totalHoldValue = recsList.filter(r => r.action_type === 'KEEP').reduce((sum, r) => sum + (r.current_holding_value_inr || 0), 0);
+  // ⚡ Bolt Optimization: Memoize total hold value calculation.
+  // Why: Prevents expensive array filtering and reducing operations on every re-render of this large dashboard component.
+  // Impact: Reduces CPU overhead on render loop by skipping O(n) computations when `recsList` is unchanged.
+  const totalHoldValue = useMemo(() => {
+    return recsList.filter(r => r.action_type === 'KEEP').reduce((sum, r) => sum + (r.current_holding_value_inr || 0), 0);
+  }, [recsList]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
