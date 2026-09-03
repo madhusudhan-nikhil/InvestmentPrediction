@@ -7,8 +7,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
+from collections import defaultdict
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 
@@ -43,9 +46,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class RateLimiter:
+    def __init__(self, limit: int = 120, window: int = 60):
+        self.limit = limit
+        self.window = window
+        self.requests = defaultdict(list)
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.time()
+        # Clean up old requests
+        self.requests[ip] = [req_time for req_time in self.requests[ip] if current_time - req_time < self.window]
+
+        if len(self.requests[ip]) >= self.limit:
+            return False
+
+        self.requests[ip].append(current_time)
+        return True
+
+rate_limiter = RateLimiter(120, 60)
+
 @app.middleware("http")
-async def add_security_headers(request, call_next):
-    response = await call_next(request)
+async def add_security_headers(request: Request, call_next):
+    # Global Rate Limiting Check
+    client_ip = request.client.host if request.client else "unknown"
+    if not rate_limiter.is_allowed(client_ip):
+        response = JSONResponse(status_code=429, content={"detail": "Too many requests. Please try again later."})
+    else:
+        response = await call_next(request)
+
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
