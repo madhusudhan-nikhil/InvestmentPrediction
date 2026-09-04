@@ -7,8 +7,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 
@@ -33,6 +34,43 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+from fastapi.responses import JSONResponse
+
+class RateLimiter:
+    def __init__(self, requests_per_minute: int = 120, max_ips: int = 10000):
+        self.requests_per_minute = requests_per_minute
+        self.max_ips = max_ips
+        self.requests: Dict[str, List[float]] = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        now = time.time()
+
+        if ip not in self.requests:
+            # Prevent memory exhaustion by bounding the dictionary size (O(1) eviction)
+            if len(self.requests) >= self.max_ips:
+                self.requests.pop(next(iter(self.requests)))
+            self.requests[ip] = []
+
+        # Clean up old requests for the current IP
+        self.requests[ip] = [req_time for req_time in self.requests[ip] if now - req_time <= 60]
+
+        if len(self.requests[ip]) >= self.requests_per_minute:
+            return False
+
+        self.requests[ip].append(now)
+        return True
+
+rate_limiter = RateLimiter(120)
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    client_ip = request.client.host if request.client else "unknown"
+    if not rate_limiter.is_allowed(client_ip):
+        # Fail securely by genericizing error messages.
+        return JSONResponse(status_code=429, content={"detail": "Too many requests"})
+    response = await call_next(request)
+    return response
 
 app.add_middleware(
     CORSMiddleware,
