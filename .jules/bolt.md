@@ -16,3 +16,6 @@
 ## 2026-11-20 - React Array Re-renders (Fallback values)
 **Learning:** In React, inline fallback values like `data || []` passed into `useMemo` dependencies cause the memoized value to be recomputed on every render when the data is null/undefined, because `[]` creates a new array reference each time.
 **Action:** Wrap the fallback assignment itself in `useMemo` (e.g., `const arr = useMemo(() => data || [], [data])`) to preserve referential equality and prevent cascading re-renders.
+## 2024-03-05 - Correlation Matrix Symmetry
+**Learning:** In Python, computing correlation matrices in nested loops over an entire universe iterates O(N^2) times. However, since many distance/correlation formulas (like `sin(i+j)` or `cos(i+j)`) are perfectly symmetric, redundant full-matrix traversal is unnecessary.
+**Action:** When calculating pair-wise properties over a matrix where `[i][j] == [j][i]`, only compute the upper triangle `for j in range(i + 1, n)` and mirror the result. This halves the time complexity to O(N^2 / 2).
