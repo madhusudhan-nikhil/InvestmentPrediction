@@ -102,3 +102,9 @@ def mock_macro_low_threat():
         "dxy_index": 102.1,
         "threat_factors": []
     }
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    from main import rate_limiter
+    rate_limiter.requests.clear()
