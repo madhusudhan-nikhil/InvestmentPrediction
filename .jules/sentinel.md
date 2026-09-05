@@ -14,3 +14,7 @@
 **Vulnerability:** The `/api/tickers` and `/api/tickers/sync` endpoints modified global application state (the backend JSON ticker database) but lacked any authentication or authorization checks. This allowed any unauthenticated user to overwrite the primary ticker dataset used for macro recommendations.
 **Learning:** Endpoints that modify application state or configuration (admin endpoints) must always be protected with authentication to prevent unauthorized tampering.
 **Prevention:** Implement mandatory token-based authentication (like an `X-Admin-Token` header validated against a secure environment variable) on all endpoints that modify global datasets or configurations. Use `hmac.compare_digest` to prevent timing attacks.
+## 2024-10-28 - [Unbounded Memory Growth in Rate Limiting]
+**Vulnerability:** Global rate limiting logic lacking bounded eviction limits could lead to memory exhaustion (DoS) when subjected to spoofed-IP attacks or high-volume distributed requests.
+**Learning:** In-memory rate limiters that use dictionaries keyed by IP addresses (e.g., `defaultdict(list)`) must have a mechanism to clean up or remove inactive/excess IP keys entirely, rather than just clearing their lists.
+**Prevention:** Implement bounded memory storage (e.g., max 10,000 IPs) using an O(1) FIFO eviction `pop(next(iter(...)))` to ensure memory cannot grow unboundedly.

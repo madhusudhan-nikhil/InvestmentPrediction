@@ -1,4 +1,5 @@
 import os
+import time
 import sys
 
 # Ensure backend directory is in sys.path when running from workspace root
@@ -8,7 +9,10 @@ import asyncio
 import io
 import logging
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
+from fastapi import File, UploadFile, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 
@@ -28,12 +32,53 @@ from services.quant_engine_india import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BharatiQuant.API")
 
+
+class RateLimiter:
+    def __init__(self, limit=120, window_seconds=60, max_ips=10000):
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self.max_ips = max_ips
+        self.requests = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.time()
+
+        # Clean up old IPs to prevent unbounded memory growth if we hit max_ips
+        if ip not in self.requests and len(self.requests) >= self.max_ips:
+            # O(1) FIFO eviction
+            self.requests.pop(next(iter(self.requests)))
+
+        if ip not in self.requests:
+            self.requests[ip] = []
+
+        # Filter out requests older than the window
+        self.requests[ip] = [req_time for req_time in self.requests[ip] if current_time - req_time < self.window_seconds]
+
+        if len(self.requests[ip]) >= self.limit:
+            return False
+
+        self.requests[ip].append(current_time)
+        return True
+
+rate_limiter = RateLimiter()
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        if not rate_limiter.is_allowed(client_ip):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too Many Requests"}
+            )
+        return await call_next(request)
+
 app = FastAPI(
     title="BharatiQuant - Indian Investment Planning & World Monitor Macro Engine",
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
 
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     # SECURITY: Use specific origins instead of wildcard (*) when credentials are allowed to prevent CSRF and unauthorized cross-origin access.
@@ -383,6 +428,7 @@ async def get_tickers():
 
 from fastapi import Header
 import os
+import time
 import hmac
 
 def verify_admin_token(x_admin_token: Optional[str]):
