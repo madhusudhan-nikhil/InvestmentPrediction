@@ -16,3 +16,6 @@
 ## 2026-11-20 - React Array Re-renders (Fallback values)
 **Learning:** In React, inline fallback values like `data || []` passed into `useMemo` dependencies cause the memoized value to be recomputed on every render when the data is null/undefined, because `[]` creates a new array reference each time.
 **Action:** Wrap the fallback assignment itself in `useMemo` (e.g., `const arr = useMemo(() => data || [], [data])`) to preserve referential equality and prevent cascading re-renders.
+## 2026-09-06 - Optimize symmetric matrix calculations
+**Learning:** When computing symmetric pair-wise properties over an entire universe (like a correlation matrix), iterating the full O(N^2) grid is redundant and wasteful.
+**Action:** Compute only the upper triangle (`for j in range(i + 1, n)`) and mirror the result (`matrix[t1][t2] = val; matrix[t2][t1] = val`) to halve the time complexity.
