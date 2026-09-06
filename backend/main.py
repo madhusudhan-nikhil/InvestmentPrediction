@@ -7,9 +7,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, Request, File, UploadFile, Form, HTTPException, Body
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import pandas as pd
 
 from schemas import (
@@ -33,6 +36,30 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+class RateLimiter:
+    def __init__(self):
+        self.requests = {}
+
+    async def __call__(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        current_time = time.time()
+
+        if client_ip not in self.requests:
+            if len(self.requests) >= 10000:
+                self.requests.pop(next(iter(self.requests)))
+            self.requests[client_ip] = []
+
+        self.requests[client_ip] = [t for t in self.requests[client_ip] if current_time - t < 60]
+
+        if len(self.requests[client_ip]) >= 120:
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+
+        self.requests[client_ip].append(current_time)
+        return await call_next(request)
+
+rate_limiter = RateLimiter()
+app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limiter)
 
 app.add_middleware(
     CORSMiddleware,
