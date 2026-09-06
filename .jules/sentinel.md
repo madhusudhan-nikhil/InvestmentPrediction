@@ -14,3 +14,7 @@
 **Vulnerability:** The `/api/tickers` and `/api/tickers/sync` endpoints modified global application state (the backend JSON ticker database) but lacked any authentication or authorization checks. This allowed any unauthenticated user to overwrite the primary ticker dataset used for macro recommendations.
 **Learning:** Endpoints that modify application state or configuration (admin endpoints) must always be protected with authentication to prevent unauthorized tampering.
 **Prevention:** Implement mandatory token-based authentication (like an `X-Admin-Token` header validated against a secure environment variable) on all endpoints that modify global datasets or configurations. Use `hmac.compare_digest` to prevent timing attacks.
+## 2024-10-27 - [Missing Rate Limiting]
+**Vulnerability:** The application was lacking global rate limiting, exposing heavy computational and third-party API endpoints to potential Denial of Service (DoS) and abuse.
+**Learning:** It is crucial to implement rate limiting globally, especially when avoiding third-party dependencies with memory leak issues. A custom in-memory implementation provides security, bounded memory usage (e.g. O(1) FIFO eviction on max IPs), and protection against abuse.
+**Prevention:** Use a custom bounded in-memory rate limiting middleware registered before `CORSMiddleware` to ensure valid rate-limited responses with appropriate headers are sent back without failing on unbounded memory structures.
