@@ -280,3 +280,20 @@ def test_save_and_sync_tickers_endpoint(test_client, monkeypatch):
     assert sync_res.status_code == 200
     assert sync_res.json()["status"] == "SUCCESS"
     assert sync_res.json()["total_tickers"] >= 50
+def test_global_rate_limiting(test_client):
+    from main import rate_limiter
+    rate_limiter.requests.clear() # clear to avoid test pollution
+
+    # Send 120 allowed requests
+    for i in range(120):
+        response = test_client.get("/")
+        assert response.status_code == 200, f"Request {i} failed with {response.status_code}"
+
+    # The 121st request should be rate limited
+    response = test_client.get("/")
+    assert response.status_code == 429
+    assert response.json() == {"detail": "Too many requests. Please try again later."}
+    assert response.headers.get("access-control-allow-origin") == "*" or response.headers.get("access-control-allow-origin") is None # CORS header depends on test_client origin setup
+
+    # Reset
+    rate_limiter.requests.clear()

@@ -7,9 +7,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import pandas as pd
 
 from schemas import (
@@ -33,6 +36,56 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+class RateLimiter:
+    def __init__(self, requests_per_minute: int = 120, max_ips: int = 10000):
+        self.requests_per_minute = requests_per_minute
+        self.max_ips = max_ips
+        self.requests: Dict[str, List[float]] = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.time()
+
+        # O(1) FIFO eviction if max IPs reached
+        if ip not in self.requests and len(self.requests) >= self.max_ips:
+            # pop the first key (FIFO due to insertion order in Python 3.7+)
+            self.requests.pop(next(iter(self.requests)))
+
+        if ip not in self.requests:
+            self.requests[ip] = []
+
+        # Filter out timestamps older than 60 seconds
+        self.requests[ip] = [req_time for req_time in self.requests[ip] if current_time - req_time < 60]
+
+        # SECURITY: Remove inactive IPs entirely to prevent memory exhaustion DoS
+        if not self.requests[ip]:
+            del self.requests[ip]
+
+        # if we just deleted the key, it means the count is 0, so it's less than requests_per_minute.
+        if ip in self.requests and len(self.requests[ip]) >= self.requests_per_minute:
+            return False
+
+        if ip not in self.requests:
+            self.requests[ip] = []
+
+        self.requests[ip].append(current_time)
+        return True
+
+rate_limiter = RateLimiter(requests_per_minute=120, max_ips=10000)
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # SECURITY: Account for X-Forwarded-For if deployed behind reverse proxy
+        forwarded = request.headers.get("X-Forwarded-For")
+        client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "127.0.0.1")
+
+        if not rate_limiter.is_allowed(client_ip):
+            return JSONResponse(status_code=429, content={"detail": "Too many requests. Please try again later."})
+
+        return await call_next(request)
+
+# Register RateLimitMiddleware BEFORE CORSMiddleware so 429s get CORS headers
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
