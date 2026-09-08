@@ -7,10 +7,41 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
+
+class RateLimiter:
+    def __init__(self, max_requests: int = 120, window_seconds: int = 60, max_ips: int = 10000):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.max_ips = max_ips
+        self.requests = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.time()
+
+        if ip not in self.requests and len(self.requests) >= self.max_ips:
+            # O(1) FIFO eviction prevents memory exhaustion DoS
+            self.requests.pop(next(iter(self.requests)))
+
+        if ip not in self.requests:
+            self.requests[ip] = []
+
+        valid_requests = [t for t in self.requests[ip] if current_time - t < self.window_seconds]
+
+        if len(valid_requests) >= self.max_requests:
+            self.requests[ip] = valid_requests
+            return False
+
+        valid_requests.append(current_time)
+        self.requests[ip] = valid_requests
+        return True
+
+rate_limiter = RateLimiter()
 
 from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
@@ -34,6 +65,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        ip = forwarded_for.split(",")[0].strip() if forwarded_for else getattr(request.client, "host", "127.0.0.1")
+
+        if not rate_limiter.is_allowed(ip):
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+
+        return await call_next(request)
+
+# IMPORTANT: RateLimitMiddleware must be added BEFORE CORSMiddleware.
+# In FastAPI, the first middleware added wraps the inner app, and subsequent ones wrap the outer app.
+# Thus, CORSMiddleware will wrap RateLimitMiddleware, ensuring 429s get CORS headers.
+app.add_middleware(RateLimitMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     # SECURITY: Use specific origins instead of wildcard (*) when credentials are allowed to prevent CSRF and unauthorized cross-origin access.
@@ -44,7 +92,7 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
