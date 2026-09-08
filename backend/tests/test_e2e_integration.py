@@ -247,6 +247,29 @@ def test_macro_pulse_500_error_handling(test_client, monkeypatch):
     assert "Internal server error" in response.json()["detail"]
 
 # ---------------------------------------------------------
+# Security & Rate Limiting Tests
+# ---------------------------------------------------------
+
+def test_global_rate_limiter(test_client):
+    from main import rate_limiter
+    rate_limiter.requests.clear()
+
+    # 120 allowed requests
+    for i in range(120):
+        response = test_client.get("/", headers={"X-Forwarded-For": "192.168.1.100", "Origin": "http://localhost:5173"})
+        assert response.status_code == 200
+
+    # 121st request should be rejected (429)
+    response = test_client.get("/", headers={"X-Forwarded-For": "192.168.1.100", "Origin": "http://localhost:5173"})
+    assert response.status_code == 429
+    assert response.json()["detail"] == "Too Many Requests"
+
+    # Verify CORS headers remain present even on 429 error
+    assert "access-control-allow-origin" in response.headers
+
+    rate_limiter.requests.clear()
+
+# ---------------------------------------------------------
 # Ticker Management API Tests (/api/tickers)
 # ---------------------------------------------------------
 

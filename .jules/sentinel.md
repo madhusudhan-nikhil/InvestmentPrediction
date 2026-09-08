@@ -14,3 +14,8 @@
 **Vulnerability:** The `/api/tickers` and `/api/tickers/sync` endpoints modified global application state (the backend JSON ticker database) but lacked any authentication or authorization checks. This allowed any unauthenticated user to overwrite the primary ticker dataset used for macro recommendations.
 **Learning:** Endpoints that modify application state or configuration (admin endpoints) must always be protected with authentication to prevent unauthorized tampering.
 **Prevention:** Implement mandatory token-based authentication (like an `X-Admin-Token` header validated against a secure environment variable) on all endpoints that modify global datasets or configurations. Use `hmac.compare_digest` to prevent timing attacks.
+
+## 2025-02-28 - [High] Rate Limiting API endpoints to Prevent DoS
+**Vulnerability:** The FastAPI backend had no rate limiting on any API endpoints, allowing unbounded requests per IP. In-memory dict-based rate limiters (like the default storage in slowapi) are susceptible to memory exhaustion DoS if spoofed IPs are used and not evicted bounding the memory.
+**Learning:** Custom middleware is needed to implement bounded memory rate limiting by extracting the client IP from `X-Forwarded-For`.
+**Prevention:** Implement a custom `RateLimiter` using O(1) FIFO eviction `pop(next(iter(...)))` when the max IP threshold is hit, preventing unbounded dictionary growth.
