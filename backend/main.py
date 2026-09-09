@@ -7,10 +7,42 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import pandas as pd
+
+class RateLimiter:
+    def __init__(self, limit: int = 120, window: int = 60, max_ips: int = 10000):
+        self.limit = limit
+        self.window = window
+        self.max_ips = max_ips
+        self.requests = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.monotonic()
+
+        if ip not in self.requests and len(self.requests) >= self.max_ips:
+            # O(1) FIFO eviction for max_ips bounding
+            self.requests.pop(next(iter(self.requests)))
+
+        if ip not in self.requests:
+            self.requests[ip] = []
+
+        active_requests = [t for t in self.requests[ip] if current_time - t < self.window]
+
+        if len(active_requests) >= self.limit:
+            self.requests[ip] = active_requests
+            return False
+
+        active_requests.append(current_time)
+        self.requests[ip] = active_requests
+        return True
+
+rate_limiter = RateLimiter(limit=120, window=60)
 
 from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
@@ -33,6 +65,21 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+        else:
+            client_ip = request.client.host if request.client else "127.0.0.1"
+
+        if not rate_limiter.is_allowed(client_ip):
+            return JSONResponse(status_code=429, content={"detail": "Too many requests"})
+
+        return await call_next(request)
+
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
