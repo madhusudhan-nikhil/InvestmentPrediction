@@ -7,8 +7,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 
@@ -33,6 +36,56 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+class RateLimiter:
+    def __init__(self, max_requests: int = 120, window_seconds: int = 60, max_ips: int = 10000):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.max_ips = max_ips
+        self.requests: Dict[str, List[float]] = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        now = time.monotonic()
+        if ip not in self.requests:
+            if len(self.requests) >= self.max_ips:
+                self.requests.pop(next(iter(self.requests)))
+            self.requests[ip] = [now]
+            return True
+
+        # Move key to end to maintain LRU-like eviction order
+        timestamps = self.requests.pop(ip)
+
+        timestamps = [t for t in timestamps if now - t < self.window_seconds]
+
+        if not timestamps:
+            self.requests[ip] = [now]
+            return True
+
+        if len(timestamps) >= self.max_requests:
+            self.requests[ip] = timestamps
+            return False
+
+        timestamps.append(now)
+        self.requests[ip] = timestamps
+        return True
+
+rate_limiter = RateLimiter()
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "127.0.0.1"
+
+        # Only trust X-Forwarded-For if request comes from local/trusted proxy
+        if client_ip in ("127.0.0.1", "::1"):
+            forwarded_for = request.headers.get("X-Forwarded-For")
+            if forwarded_for:
+                client_ip = forwarded_for.split(",")[0].strip()
+
+        if not rate_limiter.is_allowed(client_ip):
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+        return await call_next(request)
+
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

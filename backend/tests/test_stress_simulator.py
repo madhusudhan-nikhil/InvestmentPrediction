@@ -58,3 +58,12 @@ def test_run_stress_test_multi_variable():
     assert "resilient_sectors" in data
     assert "defensive_recommendations" in data
     assert "scenario_narrative" in data
+
+# add fixture to clear rate limiter before each test
+import pytest
+from main import rate_limiter
+
+@pytest.fixture(autouse=True)
+def clear_rate_limiter():
+    rate_limiter.requests.clear()
+    yield
