@@ -7,9 +7,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import pandas as pd
 
 from schemas import (
@@ -34,6 +37,45 @@ app = FastAPI(
     version="1.0.0"
 )
 
+class RateLimiter:
+    def __init__(self, max_requests: int = 120, window_seconds: int = 60, max_ips: int = 10000):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.max_ips = max_ips
+        self.requests = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.monotonic()
+        if ip in self.requests:
+            reqs = self.requests.pop(ip)
+        else:
+            reqs = []
+
+        reqs = [t for t in reqs if current_time - t < self.window_seconds]
+
+        if len(reqs) >= self.max_requests:
+            self.requests[ip] = reqs
+            return False
+
+        reqs.append(current_time)
+        self.requests[ip] = reqs
+
+        if len(self.requests) > self.max_ips:
+            self.requests.pop(next(iter(self.requests)))
+
+        return True
+
+rate_limiter = RateLimiter()
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # SECURITY: use request.client.host instead of unverified X-Forwarded-For to prevent spoofing
+        ip = request.client.host if request.client else "unknown"
+        if not rate_limiter.is_allowed(ip):
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+        return await call_next(request)
+
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     # SECURITY: Use specific origins instead of wildcard (*) when credentials are allowed to prevent CSRF and unauthorized cross-origin access.

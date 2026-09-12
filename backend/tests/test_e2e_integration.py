@@ -7,11 +7,26 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from main import app
+from main import app, rate_limiter
 
 # ---------------------------------------------------------
 # Root & Macro Pulse Endpoint Tests
 # ---------------------------------------------------------
+
+def test_global_rate_limiter(test_client):
+    rate_limiter.requests.clear()
+
+    # 120 successful requests
+    for _ in range(120):
+        response = test_client.get("/")
+        assert response.status_code == 200
+
+    # 121st request should be rate limited
+    response = test_client.get("/")
+    assert response.status_code == 429
+    assert response.json() == {"detail": "Too Many Requests"}
+
+    rate_limiter.requests.clear()
 
 def test_api_root(test_client):
     response = test_client.get("/")
