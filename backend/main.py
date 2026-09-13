@@ -34,6 +34,45 @@ app = FastAPI(
     version="1.0.0"
 )
 
+import time
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import JSONResponse
+
+class RateLimiter:
+    def __init__(self, limit, window, max_ips=10000):
+        self.limit = limit
+        self.window = window
+        self.max_ips = max_ips
+        self.requests = {}
+
+    def is_allowed(self, ip):
+        current_time = time.monotonic()
+        if ip in self.requests:
+            count, reset_time = self.requests.pop(ip)
+            if current_time > reset_time:
+                count = 1
+                reset_time = current_time + self.window
+            else:
+                count += 1
+        else:
+            if len(self.requests) >= self.max_ips:
+                self.requests.pop(next(iter(self.requests)))
+            count = 1
+            reset_time = current_time + self.window
+        self.requests[ip] = (count, reset_time)
+        return count <= self.limit
+
+rate_limiter = RateLimiter(limit=120, window=60)
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        ip = request.client.host if request.client else "127.0.0.1"
+        if not rate_limiter.is_allowed(ip):
+            return JSONResponse(status_code=429, content={"detail": "Too many requests"})
+        return await call_next(request)
+
+app.add_middleware(RateLimitMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     # SECURITY: Use specific origins instead of wildcard (*) when credentials are allowed to prevent CSRF and unauthorized cross-origin access.
