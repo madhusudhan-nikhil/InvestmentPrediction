@@ -280,3 +280,18 @@ def test_save_and_sync_tickers_endpoint(test_client, monkeypatch):
     assert sync_res.status_code == 200
     assert sync_res.json()["status"] == "SUCCESS"
     assert sync_res.json()["total_tickers"] >= 50
+
+def test_rate_limiting(test_client):
+    from main import rate_limiter
+    rate_limiter.requests.clear()
+
+    # Assuming TestClient sets request.client.host to 'testclient'
+    # Make 120 successful requests
+    for _ in range(120):
+        response = test_client.get("/api/tickers")
+        assert response.status_code == 200
+
+    # 121st request should be rate limited
+    response = test_client.get("/api/tickers")
+    assert response.status_code == 429
+    assert response.json() == {"detail": "Too many requests"}
