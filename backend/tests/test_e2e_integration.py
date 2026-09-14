@@ -13,6 +13,23 @@ from main import app
 # Root & Macro Pulse Endpoint Tests
 # ---------------------------------------------------------
 
+from main import rate_limiter
+
+def test_rate_limiter_enforcement(test_client):
+    rate_limiter.requests.clear()
+
+    # Make 120 allowed requests
+    for i in range(120):
+        response = test_client.get("/")
+        assert response.status_code == 200, f"Request {i+1} failed"
+
+    # The 121st request should be rate limited
+    response = test_client.get("/")
+    assert response.status_code == 429
+    assert response.json()["detail"] == "Too many requests"
+
+    rate_limiter.requests.clear()
+
 def test_api_root(test_client):
     response = test_client.get("/")
     assert response.status_code == 200
