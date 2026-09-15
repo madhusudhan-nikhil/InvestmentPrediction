@@ -298,21 +298,28 @@ def calculate_portfolio_diagnostics(holdings_raw: List[Dict[str, Any]], macro_th
     corr_matrix = {}
     n = len(unique_tickers)
 
-    for i, t1 in enumerate(unique_tickers):
-        corr_matrix[t1] = {}
-        for j, t2 in enumerate(unique_tickers):
-            if i == j:
-                corr_matrix[t1][t2] = 1.0
+    # ⚡ Bolt Optimization: Compute only upper triangle and mirror to lower triangle
+    # to halve O(N^2) complexity to O(N^2 / 2) for correlation matrix.
+    for t in unique_tickers:
+        corr_matrix[t] = {}
+
+    for i in range(n):
+        t1 = unique_tickers[i]
+        corr_matrix[t1][t1] = 1.0
+        for j in range(i + 1, n):
+            t2 = unique_tickers[j]
+            s1 = SECTOR_MAPPING.get(t1, "Other")
+            s2 = SECTOR_MAPPING.get(t2, "Other")
+            if s1 == s2:
+                val = 0.75 + (np.sin(i + j) * 0.1)
+            elif "ETF" in s1 or "ETF" in s2:
+                val = 0.50 + (np.cos(i + j) * 0.1)
             else:
-                s1 = SECTOR_MAPPING.get(t1, "Other")
-                s2 = SECTOR_MAPPING.get(t2, "Other")
-                if s1 == s2:
-                    val = 0.75 + (np.sin(i + j) * 0.1)
-                elif "ETF" in s1 or "ETF" in s2:
-                    val = 0.50 + (np.cos(i + j) * 0.1)
-                else:
-                    val = 0.25 + (np.sin(i * j) * 0.1)
-                corr_matrix[t1][t2] = round(float(val), 2)
+                val = 0.25 + (np.sin(i * j) * 0.1)
+
+            rounded_val = round(float(val), 2)
+            corr_matrix[t1][t2] = rounded_val
+            corr_matrix[t2][t1] = rounded_val
 
     total_pnl_inr = total_value - total_invested
     total_pnl_pct = (total_pnl_inr / total_invested * 100.0) if total_invested > 0 else 0.0
