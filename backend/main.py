@@ -10,6 +10,9 @@ import logging
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import JSONResponse
+import time
 import pandas as pd
 
 from schemas import (
@@ -33,6 +36,35 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+        self.requests = {}
+
+    async def dispatch(self, request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+
+        if client_ip in self.requests:
+            req_list = self.requests.pop(client_ip)
+            req_list = [t for t in req_list if now - t < 60.0]
+        else:
+            req_list = []
+
+        if len(req_list) >= 120:
+            self.requests[client_ip] = req_list
+            return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
+
+        req_list.append(now)
+        self.requests[client_ip] = req_list
+
+        if len(self.requests) > 10000:
+            self.requests.pop(next(iter(self.requests)))
+
+        return await call_next(request)
+
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
