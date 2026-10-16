@@ -7,9 +7,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import pandas as pd
 
 from schemas import (
@@ -28,11 +31,60 @@ from services.quant_engine_india import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BharatiQuant.API")
 
+class RateLimiter:
+    def __init__(self, limit: int = 120, window: int = 60, max_ips: int = 10000):
+        self.limit = limit
+        self.window = window
+        self.max_ips = max_ips
+        self.requests: Dict[str, List[float]] = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.monotonic()
+
+        # Evict oldest IP if we reach the cap
+        if ip not in self.requests and len(self.requests) >= self.max_ips:
+            # O(1) LRU eviction
+            self.requests.pop(next(iter(self.requests)))
+
+        if ip not in self.requests:
+            self.requests[ip] = []
+        else:
+            # Re-insert to maintain LRU order
+            reqs = self.requests.pop(ip)
+            self.requests[ip] = reqs
+
+        reqs = self.requests[ip]
+        # Clean up old requests outside the window
+        while reqs and reqs[0] <= current_time - self.window:
+            reqs.pop(0)
+
+        if len(reqs) >= self.limit:
+            return False
+
+        reqs.append(current_time)
+        return True
+
+rate_limiter = RateLimiter()
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        ip = request.client.host if request.client else "unknown"
+        if not rate_limiter.is_allowed(ip):
+            logger.warning(f"Rate limit exceeded for IP: {ip}")
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too Many Requests"}
+            )
+        response = await call_next(request)
+        return response
+
 app = FastAPI(
     title="BharatiQuant - Indian Investment Planning & World Monitor Macro Engine",
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
