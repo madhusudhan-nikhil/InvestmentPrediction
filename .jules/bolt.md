@@ -16,3 +16,7 @@
 ## 2026-11-20 - React Array Re-renders (Fallback values)
 **Learning:** In React, inline fallback values like `data || []` passed into `useMemo` dependencies cause the memoized value to be recomputed on every render when the data is null/undefined, because `[]` creates a new array reference each time.
 **Action:** Wrap the fallback assignment itself in `useMemo` (e.g., `const arr = useMemo(() => data || [], [data])`) to preserve referential equality and prevent cascading re-renders.
+
+## 2024-10-16 - O(N^2) Loop Optimization
+**Learning:** The previous code was calculating the values for a symmetric matrix O(N^2) times.
+**Action:** When computing a symmetric pairwise property, we only calculate the upper triangle (`for j in range(i + 1, n)`) and map the values symmetrically.
