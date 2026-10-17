@@ -7,10 +7,57 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
+from collections import deque
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import pandas as pd
+
+class RateLimiter:
+    """In-memory IP-based Rate Limiter with O(1) LRU bounded eviction."""
+    def __init__(self, max_requests: int = 120, window: int = 60, max_ips: int = 10000):
+        self.max_requests = max_requests
+        self.window = window
+        self.max_ips = max_ips
+        self.requests: Dict[str, deque] = {}
+
+    def is_rate_limited(self, ip: str) -> bool:
+        current_time = time.monotonic()
+
+        if ip in self.requests:
+            # Active pop and reinsert to maintain LRU order
+            timestamps = self.requests.pop(ip)
+        else:
+            timestamps = deque()
+            # Enforce max IPs limit to prevent Memory Exhaustion DoS
+            if len(self.requests) >= self.max_ips:
+                self.requests.pop(next(iter(self.requests)))
+
+        # Evict old timestamps
+        while timestamps and timestamps[0] < current_time - self.window:
+            timestamps.popleft()
+
+        if len(timestamps) >= self.max_requests:
+            # Reinsert to end of dictionary
+            self.requests[ip] = timestamps
+            return True
+
+        timestamps.append(current_time)
+        self.requests[ip] = timestamps
+        return False
+
+rate_limiter = RateLimiter()
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # SECURITY: Relying on request.client.host avoids unverified X-Forwarded-For spoofing
+        ip = request.client.host if request.client else "127.0.0.1"
+        if rate_limiter.is_rate_limited(ip):
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+        return await call_next(request)
 
 from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
@@ -33,6 +80,10 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+# Important: RateLimitMiddleware must be added BEFORE CORSMiddleware
+# so that the 429 response correctly retains CORS headers.
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
