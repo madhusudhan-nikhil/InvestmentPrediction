@@ -8,7 +8,13 @@ import os
 # Ensure backend root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from main import app
+from main import app, rate_limiter
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Reset rate limiter state before each test to prevent pollution."""
+    rate_limiter.requests.clear()
+    yield
 
 @pytest.fixture
 def test_client():

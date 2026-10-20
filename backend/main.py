@@ -7,10 +7,38 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
+
+class RateLimiter:
+    def __init__(self, limit: int = 120, window: int = 60, max_ips: int = 10000):
+        self.limit = limit
+        self.window = window
+        self.max_ips = max_ips
+        self.requests = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        now = time.monotonic()
+        if ip in self.requests:
+            reqs = self.requests.pop(ip)
+        else:
+            if len(self.requests) >= self.max_ips:
+                self.requests.pop(next(iter(self.requests)))
+            reqs = []
+        reqs = [t for t in reqs if now - t < self.window]
+        if len(reqs) >= self.limit:
+            self.requests[ip] = reqs
+            return False
+        reqs.append(now)
+        self.requests[ip] = reqs
+        return True
+
+rate_limiter = RateLimiter()
 
 from schemas import (
     PortfolioParseRequest, PortfolioDiagnostics, MacroPulseResponse,
@@ -33,6 +61,19 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Security: In-memory Rate Limiter
+        ip = request.client.host if request.client and request.client.host else "127.0.0.1"
+        if not rate_limiter.is_allowed(ip):
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+        return await call_next(request)
+
+# Note: Middleware added via app.add_middleware is applied in reverse order.
+# RateLimitMiddleware must be added BEFORE CORSMiddleware so that 429 early returns
+# have CORS headers correctly applied.
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
