@@ -7,9 +7,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import io
 import logging
+import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 import pandas as pd
 
 from schemas import (
@@ -33,6 +36,43 @@ app = FastAPI(
     description="Quantitative Portfolio Optimization (HRP, HHI) with World Monitor Geopolitical & Indian Macro Intelligence.",
     version="1.0.0"
 )
+
+class RateLimiter:
+    def __init__(self, max_requests: int = 120, window_seconds: int = 60, max_ips: int = 10000):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.max_ips = max_ips
+        self.requests = {}
+
+    def is_allowed(self, ip: str) -> bool:
+        current_time = time.monotonic()
+        if ip in self.requests:
+            history = self.requests.pop(ip)
+            history = [t for t in history if current_time - t < self.window_seconds]
+        else:
+            if len(self.requests) >= self.max_ips:
+                self.requests.pop(next(iter(self.requests)))
+            history = []
+
+        if len(history) >= self.max_requests:
+            self.requests[ip] = history
+            return False
+
+        history.append(current_time)
+        self.requests[ip] = history
+        return True
+
+rate_limiter = RateLimiter()
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        if not rate_limiter.is_allowed(client_ip):
+            return JSONResponse(status_code=429, content={"detail": "Too many requests"})
+        response = await call_next(request)
+        return response
+
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
